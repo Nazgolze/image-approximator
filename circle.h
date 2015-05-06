@@ -5,10 +5,6 @@
 
 #include <sys/param.h>
 
-#include <SDL.h>
-#include <SDL2_gfxPrimitives.h>
-#include <SDL_render.h>
-
 #include "common.h"
 
 enum c_actions {
@@ -40,12 +36,17 @@ struct cmp_result {
 	uint64_t bdiff;
 };
 
+struct c_color {
+	uint8_t r;
+	uint8_t g;
+	uint8_t b;
+};
+
 struct c_circle {
 	int x;
 	int y;
 	int radius;
-	SDL_Color color;
-	SDL_Renderer *renderer;
+	struct c_color color;
 };
 
 struct c_circle_save {

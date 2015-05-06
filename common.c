@@ -10,16 +10,23 @@ static uint32_t _random_data[RAND_SIZE];
 static void _populate_random_data()
 {
 	FILE *dev_urandom = NULL;
+	size_t elements_read = 0;
 	dev_urandom = fopen("/dev/urandom", "r");
 	if(dev_urandom) {
-		fread(&_random_data, sizeof(uint32_t), RAND_SIZE, dev_urandom);
+		elements_read = fread(&_random_data, sizeof(uint32_t), RAND_SIZE, dev_urandom);
 		fclose(dev_urandom);
 	} else {
-		fprintf(stderr, "can't get /dev/urandom, aborting....\n");
-		fflush(stderr);
+		printfe("can't get /dev/urandom, aborting....\n");
 		abort();
 		srandom(_random_data[0]);
 		for(int ix = 0; ix < RAND_SIZE; ix++) {
+			_random_data[ix] = random();
+		}
+	}
+	if(elements_read < RAND_SIZE) {
+		printfe("unable to fully read /dev/urandom.  failing back to srandom\n");
+		srandom(_random_data[0]);
+		for(int ix = elements_read; ix < RAND_SIZE; ix++) {
 			_random_data[ix] = random();
 		}
 	}

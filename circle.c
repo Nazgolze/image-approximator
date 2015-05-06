@@ -5,6 +5,7 @@
 
 static int screen_width, screen_height;
 
+#if 0
 static void _unmap_rgb(SDL_Color *color, uint8_t *r, uint8_t *g, uint8_t *b)
 {
 	*r = color->r;
@@ -21,9 +22,10 @@ static SDL_Color _map_rgb(uint8_t r, uint8_t g, uint8_t b)
 
 	return color;
 }
+#endif
 
-static void c_init_circle(struct c_circle *circle, SDL_Renderer *render,
-    int x, int y, int radius, SDL_Color color) 
+static void c_init_circle(struct c_circle *circle, 
+    int x, int y, int radius, struct c_color color) 
 {
 	circle->x = x;
 	circle->y = y;
@@ -33,8 +35,6 @@ static void c_init_circle(struct c_circle *circle, SDL_Renderer *render,
 
 static void c_draw_filled_circle(struct c_circle *circle)
 {
-	filledCircleColor(circle->renderer, circle->x, circle->y, circle->r,
-	    circle->color);
 }
 
 static void c_action(struct c_circle *circle)
