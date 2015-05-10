@@ -16,14 +16,13 @@ static void _populate_random_data()
 		elements_read = fread(&_random_data, sizeof(uint32_t), RAND_SIZE, dev_urandom);
 		fclose(dev_urandom);
 	} else {
-		printfe("can't get /dev/urandom, aborting....\n");
-		abort();
+		printfe("can't get /dev/urandom, failing to srandom....\n");
 		srandom(_random_data[0]);
 		for(int ix = 0; ix < RAND_SIZE; ix++) {
 			_random_data[ix] = random();
 		}
 	}
-	if(elements_read < RAND_SIZE) {
+	if(elements_read < RAND_SIZE && elements_read > 0) {
 		printfe("unable to fully read /dev/urandom.  failing back to srandom\n");
 		srandom(_random_data[0]);
 		for(int ix = elements_read; ix < RAND_SIZE; ix++) {

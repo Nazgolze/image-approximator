@@ -1,27 +1,32 @@
 #define GL_GLEXT_PROTOTYPES
+#include <sys/param.h>
+
 #include <stdio.h>
 #include <unistd.h>
 #include <stdbool.h>
 #include <string.h>
-
-#include <sys/param.h>
-
 #include <stdlib.h>
 #include <stdint.h>
 #include <math.h>
+#include <getopt.h>
+
 #include <GL/glut.h>
 #include <GL/glext.h>
 #include <GL/glcorearb.h>
 //#include "circle.h"
+
+#include <allegro5/allegro.h>
+#include <allegro5/allegro_image.h>
 
 #include "common.h"
 
 #define ERROR -1
 #define SUCCESS 0
 
-#define SCREEN_WIDTH  120
-#define SCREEN_HEIGHT 120
+#define SCREEN_WIDTH  320
+#define SCREEN_HEIGHT 320
 
+//#define NUM_CIRCLES 1
 #define NUM_CIRCLES SCREEN_WIDTH * SCREEN_HEIGHT / 10 * 5
 
 #define ONE_TIME printf("%s-%d\n", __FUNCTION__, __LINE__); fflush(stdout);
@@ -44,9 +49,17 @@ static bool direction = false;
 
 static bool ready = false;
 
-static bool is_written = false;
+static bool is_written = false, rerender = false;
 
 static struct c_circle circles[NUM_CIRCLES] = {0};
+
+
+static struct option _long_options[] = {
+	{"image", required_argument, 0, 'i'},
+	{"help", no_argument, 0, 'h'},
+	{0, 0, 0, 0}
+};
+
 
 static void fix(unsigned char *image)
 {
@@ -77,14 +90,32 @@ static void save_image_from_buffer(char *filename)
 	image = malloc(size);
 	glReadBuffer(GL_FRONT_LEFT);
 	//glReadBuffer(GL_BACK);
+	//glReadBuffer(GL_FRONT_AND_BACK);
 	glReadPixels(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT,
 	    GL_RGB, GL_UNSIGNED_BYTE, image);
 	fix(image);
+
+	ALLEGRO_BITMAP *bmp;
+	al_set_new_bitmap_flags(ALLEGRO_MEMORY_BITMAP);
+	bmp = al_create_bitmap(SCREEN_WIDTH, SCREEN_HEIGHT);
+
+	al_set_target_bitmap(bmp);
+
+	ALLEGRO_LOCKED_REGION *locked;
+	locked = al_lock_bitmap(bmp, ALLEGRO_PIXEL_FORMAT_BGR_888,
+	    ALLEGRO_LOCK_WRITEONLY);
+
+	locked->data = image;
+	al_unlock_bitmap(bmp);
+
+	al_save_bitmap("image.png", bmp);
+
 	FILE *write;
 	write = fopen("image.data", "wb");
 	fwrite(image, 1, size, write);
 	fclose(write);
-	free(image);
+
+	al_destroy_bitmap(bmp);
 }
 
 static void draw_circles(void)
@@ -125,6 +156,12 @@ static void draw_circles(void)
 
 static void render(void)
 {
+
+	if(!is_written && rerender) {
+		save_image_from_buffer(NULL);
+		is_written = true;
+	}
+
 	switch(i) {
 	case 1:
 		direction = false;
@@ -173,11 +210,7 @@ static void render(void)
 	glDisable(GL_BLEND);
 
 	glutSwapBuffers();
-
-	if(!is_written) {
-		save_image_from_buffer(NULL);
-		is_written = true;
-	}
+	rerender = true;
 
 }
 
@@ -216,15 +249,46 @@ static void init(void)
 	for(int ix = 0; ix < NUM_CIRCLES; ix++) {
 		circles[ix].x = get_rand() % SCREEN_WIDTH;
 		circles[ix].y = get_rand() % SCREEN_HEIGHT;
-		circles[ix].color.r = get_rand() % 12;
-		circles[ix].color.g = get_rand() % 12;
-		circles[ix].color.b = get_rand() % 12;
-		circles[ix].radius = get_rand() % 3 + 2;
+		circles[ix].color.r = get_rand() % 5;
+		circles[ix].color.g = get_rand() % 5;
+		circles[ix].color.b = get_rand() % 5;
+		circles[ix].radius = get_rand() % 5 + 5;
 	}
 }
 
 int main(int argc, char **argv)
 {
+
+	int c;
+	while(true) {
+		int option_index = 0;
+		c = getopt_long(argc, argv, "hi:", _long_options, &option_index);
+
+		if(c == -1)
+			break;
+		switch(c) {
+		case 'h':
+			//_print_help();
+			return 0;
+		case 'i':
+			printf("optarg = %s\n", (char *)optarg);
+			return 0;
+			//_show_intermediate = true;
+			break;
+		default:
+			return 0;
+		}
+	}
+
+	if(!al_init()) {
+		printfe("failed to initialize allegro!\n");
+		return ERROR;
+}
+
+	if(!al_init_image_addon()) {
+		printfe("failed to initialize allegro image library!\n");
+		return ERROR;
+	}
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE);
 	glutInitWindowSize(SCREEN_WIDTH, SCREEN_HEIGHT);
