@@ -1,13 +1,14 @@
 CC=gcc
 CFLAGS=-O2 -pipe -D_REENTRANT -std=gnu11 -g -Wall -Wunused-variable -Wuninitialized -pedantic
+#CFLAGS=-pipe -D_REENTRANT -std=gnu11 -g -Wall -Wunused-variable -Wuninitialized -pedantic
 
 #LDFLAGS=-lSDL2_image -lSDL2_gfx -lSDL2 -lpthread
 #INCFLAGS=-I/usr/include/SDL2
 
 INCFLAGS=-I/usr/include/libdrm
-LDFLAGS=-lGLU -lGL -lglut -lallegro -lallegro_image -lm
+LDFLAGS=-lGLU -lGL -lglut -lallegro -lallegro_image -lbsd -lm
 
-OBJECTS=main.o common.o
+OBJECTS=main.o common.o circle.o image.o
 
 all: main 
 

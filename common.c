@@ -1,5 +1,14 @@
+#define _GNU_SOURCE
+#include <sys/param.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <time.h>
+
+#include <GL/glut.h>
+#include <GL/glext.h>
+#include <GL/glcorearb.h>
+
+#include <bsd/stdlib.h>
 
 #include "common.h"
 
@@ -9,6 +18,8 @@ static uint32_t _random_data[RAND_SIZE];
 
 static void _populate_random_data()
 {
+	arc4random_buf(_random_data, sizeof(_random_data));
+#if 0
 	FILE *dev_urandom = NULL;
 	size_t elements_read = 0;
 	dev_urandom = fopen("/dev/urandom", "r");
@@ -24,11 +35,17 @@ static void _populate_random_data()
 	}
 	if(elements_read < RAND_SIZE && elements_read > 0) {
 		printfe("unable to fully read /dev/urandom.  failing back to srandom\n");
-		srandom(_random_data[0]);
+		uint32_t tmp;
+		time_t tmp2;
+		tmp2 = time(&tmp2);
+		tmp ^= (uint32_t)tmp2;
+
+		srandom(tmp);
 		for(int ix = elements_read; ix < RAND_SIZE; ix++) {
 			_random_data[ix] = random();
 		}
 	}
+#endif
 }
 
 uint32_t get_rand()
@@ -39,5 +56,127 @@ uint32_t get_rand()
 	}
 	random_int = _random_data[_random_index];
 	_random_index = (_random_index + 1) % RAND_SIZE;
+	printf("random_int = %u\n", random_int);
 	return random_int;
 }
+
+void start_time(struct timespec *tp1)
+{
+	clock_gettime(CLOCK_MONOTONIC, tp1);
+}
+
+char *end_time(struct timespec *tp1, struct timespec *tp2, char *fmt, ...)
+{
+	clock_gettime(CLOCK_MONOTONIC, tp2);
+
+	char *info_str;
+	va_list ap;
+	va_start(ap, fmt);
+	vasprintf(&info_str, fmt, ap);
+	va_end(ap);
+
+	char nanosec_str[12] = {0};
+	char *tmp;
+	int tmp_len;
+	int jx;
+	
+	long seconds, nanoseconds;
+	if(tp2->tv_nsec < tp1->tv_nsec) {
+		nanoseconds = labs(tp2->tv_nsec - tp1->tv_nsec);
+		seconds = tp2->tv_sec - tp1->tv_sec - 1;
+	} else {
+		nanoseconds = tp2->tv_nsec - tp1->tv_nsec;
+		seconds = tp2->tv_sec - tp1->tv_sec;
+	}
+	
+	asprintf(&tmp, "%ld", nanoseconds);
+	tmp_len = strlen(tmp);
+	jx = 9;
+	for(int ix = tmp_len; ix >= 0; ix--) {
+		nanosec_str[jx] = tmp[ix];
+		jx--;
+	}
+	for(int ix = 0; nanosec_str[ix] == 0; ix++) {
+		nanosec_str[ix] = '0';
+	}
+	free(tmp);
+	
+	asprintf(&tmp, "%s: %ld.%ss", info_str, seconds, nanosec_str);
+	free(info_str);
+	
+	return tmp;
+}
+
+void ia_random_action(struct ia_circle *circle)
+{
+	int factor = get_rand() % (MIN(screen_width, screen_height) / 2);
+	//int factor = get_rand() % (MAX(screen_width, screen_height) * 2);
+	int tmp;
+	enum ia_actions action = get_rand() % 3;
+
+	factor = MAX(factor, 1);
+
+	int r_factor = get_rand() % 2 ? factor : -factor;
+	unsigned char c_factor = get_rand() % 50;
+
+	c_factor = MAX(c_factor, 1);
+
+	int dir = get_rand() % 4;
+	switch(action) {
+	case IA_MOVE:
+		switch(dir) {
+		case IA_LEFT:
+			circle->x = MAX(0, circle->x - factor);
+			break;
+		case IA_RIGHT:
+			circle->x = MIN(screen_width, circle->x + factor);
+			break;
+		case IA_UP:
+			circle->y = MAX(0, circle->y - factor);
+			break;
+		case IA_DOWN:
+			circle->y = MIN(screen_height, circle->y + factor);
+			break;
+		}
+		break;
+	case IA_RESIZE:
+		circle->radius += r_factor;
+		circle->radius = MAX(1, circle->radius);
+		tmp = MIN(screen_width, screen_height) / 1;
+		circle->radius = MIN(tmp, circle->radius);
+		break;
+	case IA_RECOLOR:
+		tmp = get_rand() % 3;
+		unsigned char r,g,b, new;
+		r = circle->color.r;
+		g = circle->color.g;
+		b = circle->color.b;
+		switch(tmp) {
+		case IA_RED:
+			if(get_rand() % 2) {
+				new = MIN(255, r + c_factor);
+			} else {
+				new = MAX(0, r - c_factor);
+			}
+			circle->color.r = new;
+			break;
+		case IA_GREEN:
+			if(get_rand() % 2) {
+				new = MIN(255, g + c_factor);
+			} else {
+				new = MAX(0, g - c_factor);
+			}
+			circle->color.g = new;
+			break;
+		case IA_BLUE:
+			if(get_rand() % 2) {
+				new = MIN(255, b + c_factor);
+			} else {
+				new = MAX(0, b - c_factor);
+			}
+			circle->color.b = new;
+			break;
+		}
+	}
+}
+

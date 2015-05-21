@@ -1,4 +1,5 @@
 #define GL_GLEXT_PROTOTYPES
+#define _GNU_SOURCE
 #include <sys/param.h>
 
 #include <stdio.h>
@@ -15,124 +16,41 @@
 #include <GL/glcorearb.h>
 //#include "circle.h"
 
-#include <allegro5/allegro.h>
-#include <allegro5/allegro_image.h>
 
 #include "common.h"
-
-#define ERROR -1
-#define SUCCESS 0
-
-#define SCREEN_WIDTH  320
-#define SCREEN_HEIGHT 320
-
-//#define NUM_CIRCLES 1
-#define NUM_CIRCLES SCREEN_WIDTH * SCREEN_HEIGHT / 10 * 5
+#include "circle.h"
+#include "image.h"
 
 #define ONE_TIME printf("%s-%d\n", __FUNCTION__, __LINE__); fflush(stdout);
 
-struct c_color {
-	uint8_t r;
-	uint8_t g;
-	uint8_t b;
-};
-
-struct c_circle {
-	int x;
-	int y;
-	int radius;
-	struct c_color color;
-};
-
-static uint32_t i = 1;
-static bool direction = false;
-
+static int global_idx = 1;
 static bool ready = false;
+static bool first_render = true;
 
-static bool is_written = false, rerender = false;
-
-static struct c_circle circles[NUM_CIRCLES] = {0};
-
+//static bool is_written = false, rerender = false;
 
 static struct option _long_options[] = {
+	{"backtrack", no_argument, 0, 'b'},
+	{"circles", required_argument, 0, 'c'},
 	{"image", required_argument, 0, 'i'},
 	{"help", no_argument, 0, 'h'},
 	{0, 0, 0, 0}
 };
 
-
-static void fix(unsigned char *image)
-{
-	int count = 0, idx;
-	unsigned char temp_image[SCREEN_WIDTH * 3] = {0};
-
-	for(idx = SCREEN_HEIGHT - 1; idx >= 0 && count < idx; idx--) {
-		memcpy(&temp_image,
-		    image + (SCREEN_WIDTH * 3 * count),
-		    SCREEN_WIDTH * 3);
-		memcpy(image + (SCREEN_WIDTH * 3 * count),
-		    image + (SCREEN_WIDTH * 3 * idx),
-		    SCREEN_WIDTH * 3);
-		memcpy(image + (SCREEN_WIDTH * 3 * idx),
-		    &temp_image,
-		    SCREEN_WIDTH * 3);
-		count++;
-	}
-	printf("idx = %d\ncount = %d\n", idx, count);
-}
-
-static void save_image_from_buffer(char *filename)
-{
-	glPixelStorei(GL_PACK_ALIGNMENT,1);
-
-	unsigned char *image;
-	unsigned int size = SCREEN_WIDTH * SCREEN_HEIGHT * 3;
-	image = malloc(size);
-	glReadBuffer(GL_FRONT_LEFT);
-	//glReadBuffer(GL_BACK);
-	//glReadBuffer(GL_FRONT_AND_BACK);
-	glReadPixels(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT,
-	    GL_RGB, GL_UNSIGNED_BYTE, image);
-	fix(image);
-
-	ALLEGRO_BITMAP *bmp;
-	al_set_new_bitmap_flags(ALLEGRO_MEMORY_BITMAP);
-	bmp = al_create_bitmap(SCREEN_WIDTH, SCREEN_HEIGHT);
-
-	al_set_target_bitmap(bmp);
-
-	ALLEGRO_LOCKED_REGION *locked;
-	locked = al_lock_bitmap(bmp, ALLEGRO_PIXEL_FORMAT_BGR_888,
-	    ALLEGRO_LOCK_WRITEONLY);
-
-	locked->data = image;
-	al_unlock_bitmap(bmp);
-
-	al_save_bitmap("image.png", bmp);
-
-	FILE *write;
-	write = fopen("image.data", "wb");
-	fwrite(image, 1, size, write);
-	fclose(write);
-
-	al_destroy_bitmap(bmp);
-}
-
-static void draw_circles(void)
+static void draw_circles(struct ia_circles *circles)
 {
 	int idx, jdx;
 	float x1,y1,x2,y2;
-	float angle;
 	double radius;
 
-	for(idx = 0; idx < NUM_CIRCLES; idx++) {
+	for(idx = 0; idx < circles->num_circles; idx++) {
 		glBegin(GL_POLYGON);
-		x1 = (float)circles[idx].x;
-		y1 = (float)circles[idx].y;
-		glColor3ub(circles[idx].color.r,
-		    circles[idx].color.g,
-		    circles[idx].color.b);
-		radius = (double)circles[idx].radius;
+		x1 = (float)circles->circles[idx].x;
+		y1 = (float)circles->circles[idx].y;
+		glColor3ub(circles->circles[idx].color.r,
+		    circles->circles[idx].color.g,
+		    circles->circles[idx].color.b);
+		radius = (double)circles->circles[idx].radius;
 		float theta = 0;
 		float theta2 = 6 * 3.14159265359 / 180;
 
@@ -154,64 +72,72 @@ static void draw_circles(void)
 
 }
 
-static void render(void)
+static void _render(struct ia_circles &l_circles)
 {
-
-	if(!is_written && rerender) {
-		save_image_from_buffer(NULL);
-		is_written = true;
-	}
-
-	switch(i) {
-	case 1:
-		direction = false;
-		break;
-	case MIN(SCREEN_WIDTH, SCREEN_HEIGHT):
-		direction = true;
-		break;
-	}
-
-	if(direction) {
-		i -= 2;
-	} else {
-		i += 2;
-	}
-
-	if(i > MIN(SCREEN_WIDTH, SCREEN_HEIGHT)) {
-		i = MIN(SCREEN_WIDTH, SCREEN_HEIGHT);
-	} else if(i < 1) {
-		i = 1;
-	}
-
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_BLEND);
 	glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
 	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE, GL_ONE, GL_ZERO);
+	draw_circles(l_circles);
 
-#if 0
-	glPointSize(10.0);
-	glBegin(GL_POINTS);
-	glColor3ub(i, 0, 0);
-	glVertex2f(0, 0.5);
-	glEnd();
-#endif
-
-
-	draw_circles();
-
-#if 0
-	glBegin(GL_TRIANGLES);
-	glColor3ub(255, 0, 0);
-	glVertex2f(-1, -1);
-	qlVertex2f(1, -1);
-	glVertex2f(0, 1);
-	glEnd();
-#endif
 	glDisable(GL_BLEND);
 
-	glutSwapBuffers();
-	rerender = true;
+	glFlush();
+}
 
+static struct img_bitmap *_img = NULL, *_img_prev = NULL;
+static int _circle_index = 0;
+static int _max_allow = 0;
+static void render(void)
+{
+	char *end_time_str;
+	struct timespec tp1, tp2;
+	
+	if(first_render) {
+		_img = img_from_GL();
+		img_assign_score(_img, reference_image);
+		_img_prev = img_clone(_img);
+		first_render = false;
+		return;
+	}
+	start_time(&tp1);
+	// stochastic hill climbing algorithm
+	img_free(_img);
+	ia_random_action(&circles.circles[_circle_index]);
+	_render();
+	_img = img_from_GL();
+	img_assign_score(_img, reference_image);
+
+	printf("num_circles = %d\n", circles.num_circles);
+	printf("_img->score: %ld\n", _img->score);
+	printf("_img_prev->score: %ld\n", _img_prev->score);
+	printf("diff: %ld\n", _img->score - _img_prev->score);
+	if((_img->score - _img_prev->score) > _max_allow) {
+		_max_allow++;
+		_max_allow = MIN(_max_allow, circles.num_circles);
+		img_free(_img);
+		_img = img_clone(_img_prev);
+		printf("rejecting change for circle[%d]\n", _circle_index);
+		memcpy(&circles.circles[_circle_index], &circles_prev.circles[_circle_index],
+		    sizeof(struct ia_circle));
+	} else {
+		_max_allow = 0;
+		img_free(_img_prev);
+		_img_prev = img_clone(_img);
+		memcpy(&circles_prev.circles[_circle_index], &circles.circles[_circle_index],
+		    sizeof(struct ia_circle));
+		char *fn;
+		asprintf(&fn, "image%d.png", global_idx);
+		al_save_bitmap(fn, _img->bmp);
+		free(fn);
+		global_idx++;
+		_circle_index++;
+		_circle_index %= circles.num_circles;
+	}
+
+	end_time_str = end_time(&tp1, &tp2, "time");
+	printf("%s\n", end_time_str);
+	free(end_time_str);
 }
 
 static void handle_keys(unsigned char key, int x, int y)
@@ -231,14 +157,13 @@ static void handle_keys(unsigned char key, int x, int y)
 
 static void resize(int width, int height)
 {
-	glutReshapeWindow(SCREEN_WIDTH, SCREEN_HEIGHT);
+	glutReshapeWindow(screen_width, screen_height);
 }
 
 static void init(void)
 {
-	GLfloat w = SCREEN_WIDTH;
-	GLfloat h = SCREEN_HEIGHT;
-	GLfloat aspect_ratio = w / h;
+	GLfloat w = screen_width;
+	GLfloat h = screen_height;
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 
@@ -246,40 +171,10 @@ static void init(void)
 
 	glViewport(0, 0, w, h);
 
-	for(int ix = 0; ix < NUM_CIRCLES; ix++) {
-		circles[ix].x = get_rand() % SCREEN_WIDTH;
-		circles[ix].y = get_rand() % SCREEN_HEIGHT;
-		circles[ix].color.r = get_rand() % 5;
-		circles[ix].color.g = get_rand() % 5;
-		circles[ix].color.b = get_rand() % 5;
-		circles[ix].radius = get_rand() % 5 + 5;
-	}
 }
 
 int main(int argc, char **argv)
 {
-
-	int c;
-	while(true) {
-		int option_index = 0;
-		c = getopt_long(argc, argv, "hi:", _long_options, &option_index);
-
-		if(c == -1)
-			break;
-		switch(c) {
-		case 'h':
-			//_print_help();
-			return 0;
-		case 'i':
-			printf("optarg = %s\n", (char *)optarg);
-			return 0;
-			//_show_intermediate = true;
-			break;
-		default:
-			return 0;
-		}
-	}
-
 	if(!al_init()) {
 		printfe("failed to initialize allegro!\n");
 		return ERROR;
@@ -289,11 +184,57 @@ int main(int argc, char **argv)
 		printfe("failed to initialize allegro image library!\n");
 		return ERROR;
 	}
+	int c, num_circles = 0;
+	bool backtrack = false;
+	while(true) {
+		int option_index = 0;
+		int error;
+		c = getopt_long(argc, argv, "bhi:c:", _long_options, &option_index);
+
+		if(c == -1)
+			break;
+		switch(c) {
+		case 'h':
+			//_print_help();
+			return 0;
+		case 'c':
+			num_circles = strtol(optarg, NULL, 10);
+			break;
+		case 'i':
+			reference_image = img_load((const char *)optarg);
+			if(!reference_image) {
+				printfe("unable to load reference image\n");
+				return ERROR;
+			}
+			screen_width = al_get_bitmap_width(reference_image->bmp);
+			screen_height = al_get_bitmap_height(reference_image->bmp);
+			//_show_intermediate = true;
+			break;
+		case 'b':
+			backtrack = true;
+		default:
+			return 0;
+		}
+	}
+	if(num_circles == 0) {
+		num_circles = screen_width * screen_height / 10 * 5;
+	}
+
+	if(backtrack) {
+		init_circles(&circles, IA_NULL, num_circles);
+		init_circles(&circles_prev, IA_NULL, num_circles);
+	} else {
+		init_circles(&circles, IA_RANDOM, num_circles);
+		init_circles(&circles_prev, IA_RANDOM, num_circles);
+		memcpy(circles_prev.circles, circles.circles,
+		    num_circles * sizeof(struct ia_circle));
+	}
+	printf("screen_width = %d\nscreen_height = %d\n", screen_width, screen_height);
 	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE);
-	glutInitWindowSize(SCREEN_WIDTH, SCREEN_HEIGHT);
+	glutInitDisplayMode(GLUT_RGB | GLUT_SINGLE);
+	glutInitWindowSize(screen_width, screen_height);
 	glutCreateWindow("Image Approximator");
-	glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+	glViewport(0, 0, screen_width, screen_height);
 	printf("%s\n", glGetString(GL_VERSION));
 	glutDisplayFunc(render);
 	glutKeyboardFunc(handle_keys);
@@ -304,54 +245,5 @@ int main(int argc, char **argv)
 
 	glutMainLoop();
 
-#if 0
-	SDL_Window *window = NULL;
-	SDL_Renderer *renderer = NULL;
-	SDL_Texture *texture = NULL;
-	SDL_Surface *screen_surface = NULL;
-	SDL_Event e;
-	bool quit = false;
-
-	if(SDL_Init(SDL_INIT_VIDEO)) {
-		printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
-		return ERROR;
-	}
-	window = SDL_CreateWindow("Image Approximator", 0,
-	    0, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
-	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-
-	if(!window) {
-		printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
-		SDL_Quit();
-		return ERROR;
-	}
-
-	screen_surface = SDL_GetWindowSurface(window);
-	texture = SDL_CreateTextureFromSurface(renderer, screen_surface);
-
-	//SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_ADD);
-
-	while(!quit) {
-		SDL_PollEvent(&e);
-		if(e.type == SDL_KEYUP) {
-			quit = true;
-		}
-		//_randomize_rect(&rect);
-		//filledCircleColor(renderer, get_rand() % SCREEN_WIDTH, get_rand() % SCREEN_HEIGHT,
-		//    get_rand() % (MAX(SCREEN_WIDTH, SCREEN_HEIGHT) / 3), get_rand());
-		filledCircleColor(renderer, 320, 240, 300, get_rand());
-		//SDL_FillRect(screen_surface, &rect, SDL_MapRGB(screen_surface->format, get_rand() % 128, get_rand() % 128, get_rand() % 128));
-
-
-	        //SDL_RenderClear(renderer);
-	        //SDL_RenderCopy(renderer, texture, NULL, NULL);
-		SDL_RenderPresent(renderer);
-		sleep(1);
-		//SDL_UpdateWindowSurface(window);
-	}
-	SDL_DestroyWindow(window);
-	SDL_Quit();
-	//printf("Hello World\n");
-#endif
 	return SUCCESS;
 }
