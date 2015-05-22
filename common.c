@@ -56,7 +56,7 @@ uint32_t get_rand()
 	}
 	random_int = _random_data[_random_index];
 	_random_index = (_random_index + 1) % RAND_SIZE;
-	printf("random_int = %u\n", random_int);
+	//printf("random_int = %u\n", random_int);
 	return random_int;
 }
 
@@ -70,9 +70,12 @@ char *end_time(struct timespec *tp1, struct timespec *tp2, char *fmt, ...)
 	clock_gettime(CLOCK_MONOTONIC, tp2);
 
 	char *info_str;
+	int error = SUCCESS;
 	va_list ap;
 	va_start(ap, fmt);
-	vasprintf(&info_str, fmt, ap);
+	error = vasprintf(&info_str, fmt, ap);
+	if(error == ERROR)
+		printfe("%s", strerror(errno));
 	va_end(ap);
 
 	char nanosec_str[12] = {0};
@@ -89,7 +92,9 @@ char *end_time(struct timespec *tp1, struct timespec *tp2, char *fmt, ...)
 		seconds = tp2->tv_sec - tp1->tv_sec;
 	}
 	
-	asprintf(&tmp, "%ld", nanoseconds);
+	error = asprintf(&tmp, "%ld", nanoseconds);
+	if(error == ERROR)
+		printfe("%s", strerror(errno));
 	tmp_len = strlen(tmp);
 	jx = 9;
 	for(int ix = tmp_len; ix >= 0; ix--) {
@@ -101,7 +106,9 @@ char *end_time(struct timespec *tp1, struct timespec *tp2, char *fmt, ...)
 	}
 	free(tmp);
 	
-	asprintf(&tmp, "%s: %ld.%ss", info_str, seconds, nanosec_str);
+	error = asprintf(&tmp, "%s: %ld.%ss", info_str, seconds, nanosec_str);
+	if(error == ERROR)
+		printfe("%s", strerror(errno));
 	free(info_str);
 	
 	return tmp;
@@ -180,3 +187,27 @@ void ia_random_action(struct ia_circle *circle)
 	}
 }
 
+int printfl(enum ia_print_level pl, const char *fmt, ...)
+{
+	int error = SUCCESS;
+	char str[2048] = {0};
+	va_list ap;
+	va_start(ap, fmt);
+	error = vsnprintf(str, sizeof(str), fmt, ap);
+	if(error == ERROR)
+		return error;
+	va_end(ap);
+
+	if(pl == IA_INFO && print_level >= IA_INFO) {
+		printf("%s\n", str);
+	} else if(pl == IA_ERR && print_level >= IA_ERR) {
+		fprintf(stderr, "Error: %s\n", str);
+		fflush(stderr);
+	} else if(pl == IA_DEBUG && print_level >= IA_DEBUG) {
+		printf("%s-%d: %s\n", __FUNCTION__, __LINE__, str);
+		fflush(stdout);
+	}
+
+	return error;
+
+}

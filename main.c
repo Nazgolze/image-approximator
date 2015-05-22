@@ -2,14 +2,15 @@
 #define _GNU_SOURCE
 #include <sys/param.h>
 
-#include <stdio.h>
-#include <unistd.h>
-#include <stdbool.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <math.h>
+#include <errno.h>
 #include <getopt.h>
+#include <math.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 #include <GL/glut.h>
 #include <GL/glext.h>
@@ -30,7 +31,6 @@ static bool first_render = true;
 //static bool is_written = false, rerender = false;
 
 static struct option _long_options[] = {
-	{"backtrack", no_argument, 0, 'b'},
 	{"circles", required_argument, 0, 'c'},
 	{"image", required_argument, 0, 'i'},
 	{"help", no_argument, 0, 'h'},
@@ -72,7 +72,7 @@ static void draw_circles(struct ia_circles *circles)
 
 }
 
-static void _render(struct ia_circles &l_circles)
+static void _render(struct ia_circles *l_circles)
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_BLEND);
@@ -92,6 +92,7 @@ static void render(void)
 {
 	char *end_time_str;
 	struct timespec tp1, tp2;
+	int error = SUCCESS;
 	
 	if(first_render) {
 		_img = img_from_GL();
@@ -104,11 +105,11 @@ static void render(void)
 	// stochastic hill climbing algorithm
 	img_free(_img);
 	ia_random_action(&circles.circles[_circle_index]);
-	_render();
+	_render(&circles);
 	_img = img_from_GL();
 	img_assign_score(_img, reference_image);
 
-	printf("num_circles = %d\n", circles.num_circles);
+	printf("num_circles = %lu\n", circles.num_circles);
 	printf("_img->score: %ld\n", _img->score);
 	printf("_img_prev->score: %ld\n", _img_prev->score);
 	printf("diff: %ld\n", _img->score - _img_prev->score);
@@ -127,8 +128,12 @@ static void render(void)
 		memcpy(&circles_prev.circles[_circle_index], &circles.circles[_circle_index],
 		    sizeof(struct ia_circle));
 		char *fn;
-		asprintf(&fn, "image%d.png", global_idx);
-		al_save_bitmap(fn, _img->bmp);
+		error = asprintf(&fn, "image%d.png", global_idx);
+		if(error == ERROR) {
+			printfe("%s", strerror(errno));
+			abort();
+		}
+		//al_save_bitmap(fn, _img->bmp);
 		free(fn);
 		global_idx++;
 		_circle_index++;
@@ -175,6 +180,7 @@ static void init(void)
 
 int main(int argc, char **argv)
 {
+	print_level = IA_DEBUG;
 	if(!al_init()) {
 		printfe("failed to initialize allegro!\n");
 		return ERROR;
@@ -185,11 +191,10 @@ int main(int argc, char **argv)
 		return ERROR;
 	}
 	int c, num_circles = 0;
-	bool backtrack = false;
 	while(true) {
 		int option_index = 0;
-		int error;
-		c = getopt_long(argc, argv, "bhi:c:", _long_options, &option_index);
+		//int error;
+		c = getopt_long(argc, argv, "hi:c:", _long_options, &option_index);
 
 		if(c == -1)
 			break;
@@ -210,8 +215,6 @@ int main(int argc, char **argv)
 			screen_height = al_get_bitmap_height(reference_image->bmp);
 			//_show_intermediate = true;
 			break;
-		case 'b':
-			backtrack = true;
 		default:
 			return 0;
 		}
@@ -220,15 +223,11 @@ int main(int argc, char **argv)
 		num_circles = screen_width * screen_height / 10 * 5;
 	}
 
-	if(backtrack) {
-		init_circles(&circles, IA_NULL, num_circles);
-		init_circles(&circles_prev, IA_NULL, num_circles);
-	} else {
-		init_circles(&circles, IA_RANDOM, num_circles);
-		init_circles(&circles_prev, IA_RANDOM, num_circles);
-		memcpy(circles_prev.circles, circles.circles,
-		    num_circles * sizeof(struct ia_circle));
-	}
+	init_circles(&circles, IA_RANDOM, num_circles);
+	init_circles(&circles_prev, IA_RANDOM, num_circles);
+	memcpy(circles_prev.circles, circles.circles,
+	    num_circles * sizeof(struct ia_circle));
+
 	printf("screen_width = %d\nscreen_height = %d\n", screen_width, screen_height);
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGB | GLUT_SINGLE);

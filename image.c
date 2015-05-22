@@ -3,6 +3,7 @@
 #include <GL/glext.h>
 #include <GL/glcorearb.h>
 
+#include "common.h"
 #include "image.h"
 
 static unsigned char *_get_raw_image()
@@ -11,10 +12,7 @@ static unsigned char *_get_raw_image()
 	unsigned char *image;
 	unsigned int size = screen_width * screen_height * 3;
 	image = calloc(1, size);
-	//glReadBuffer(GL_FRONT_LEFT);
-	//glReadBuffer(GL_BACK);
 	glReadBuffer(GL_FRONT);
-	//glReadBuffer(GL_FRONT_AND_BACK);
 	glReadPixels(0, 0, screen_width, screen_height,
 	    GL_RGB, GL_UNSIGNED_BYTE, image);
 	return image;
@@ -61,7 +59,7 @@ struct img_bitmap *img_load(const char *filename)
 	struct img_bitmap *image = calloc(1, sizeof(struct img_bitmap));
 	if(image == NULL) {
 		printfd("memory allocation error");
-		return ERROR;
+		return NULL;
 	}
 	image->bmp = al_load_bitmap(filename);
 	if(image->bmp == NULL) {

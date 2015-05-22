@@ -14,14 +14,8 @@
 #define ERROR -1
 #define SUCCESS 0
 
-#define printfe(...) fprintf(stderr, ##__VA_ARGS__); fflush(stderr);
-
-#ifdef DEBUG
-#define printfd(fmt, ...) printf("%s-%d: " fmt "\n", __FUNCTION__, __LINE__,  ##__VA_ARGS__)
-#else
-#define printfd(fmt, ...)
-#endif
-
+#define printfe(...) printfl(IA_ERR, ##__VA_ARGS__);
+#define printfd(...) printfl(IA_DEBUG, ##__VA_ARGS__);
 
 // data definitions
 struct ia_color {
@@ -40,6 +34,11 @@ struct ia_circle {
 struct ia_circles {
 	struct ia_circle *circles;
 	uint64_t num_circles;
+};
+
+struct img_bitmap {
+	ALLEGRO_BITMAP *bmp;
+	int64_t score;
 };
 
 enum ia_actions {
@@ -66,14 +65,23 @@ enum ia_circle_start {
 	IA_RANDOM
 };
 
+enum ia_print_level {
+	IA_INFO,
+	IA_ERR,
+	IA_DEBUG,
+};
+
 // global variables
 int screen_width, screen_height;
 struct img_bitmap *reference_image, *best_image;
 struct ia_circles circles, circles_prev;
+enum ia_print_level print_level;
 
 // function declarations
 uint32_t get_rand(void);
 void start_time(struct timespec *);
 char *end_time(struct timespec *, struct timespec *, char *, ...);
 void ia_random_action(struct ia_circle *);
+
+int printfl(enum ia_print_level, const char *fmt, ...);
 #endif

@@ -88,7 +88,7 @@ void sort_circles(struct ia_circles *circles)
 	}
 
 	qsort(circles->circles, circles->num_circles, sizeof(struct ia_circle),
-	    _circle_compare);
+	    (__compar_fn_t)_circle_compare);
 }
 
 #if 0
