@@ -10,10 +10,10 @@ LDFLAGS=-lGLU -lGL -lglut -lallegro -lallegro_image -lbsd -lm
 
 OBJECTS=main.o common.o circle.o image.o ga.o
 
-all: main 
+all: main
 
 main: $(OBJECTS) Makefile
-	$(CC) $(CFLAGS) $(INCFLAGS) $(LDFLAGS) $(OBJECTS) -fPIC -o main
+	$(CC) $(CFLAGS) $(INCFLAGS) $(OBJECTS) -fPIC $(LDFLAGS) -o main
 
 %.o: %.c Makefile
 	$(CC) $(CFLAGS) -fPIC -lc $(INCFLAGS) -c $<
