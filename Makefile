@@ -8,7 +8,7 @@ CFLAGS=-O2 -pipe -D_REENTRANT -std=gnu11 -g -Wall -Wunused-variable -Wuninitiali
 INCFLAGS=-I/usr/include/libdrm
 LDFLAGS=-lGLU -lGL -lglut -lallegro -lallegro_image -lbsd -lm
 
-OBJECTS=main.o common.o circle.o image.o
+OBJECTS=main.o common.o circle.o image.o ga.o
 
 all: main 
 

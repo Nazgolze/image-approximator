@@ -34,6 +34,7 @@ struct ia_circle {
 struct ia_circles {
 	struct ia_circle *circles;
 	uint64_t num_circles;
+	struct img_bitmap *img;
 };
 
 struct img_bitmap {
@@ -60,11 +61,6 @@ enum ia_direction {
 	IA_DOWN
 };
 
-enum ia_circle_start {
-	IA_NULL,
-	IA_RANDOM
-};
-
 enum ia_print_level {
 	IA_INFO,
 	IA_ERR,
@@ -74,7 +70,6 @@ enum ia_print_level {
 // global variables
 int screen_width, screen_height;
 struct img_bitmap *reference_image, *best_image;
-struct ia_circles circles, circles_prev;
 enum ia_print_level print_level;
 
 // function declarations
