@@ -1,5 +1,4 @@
-approximate images with shapes.
+approximate images with circles.
 
 hill climbing,
-genetic algorithm,
-backtracking (yes, insane)
+genetic algorithm
