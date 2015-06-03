@@ -205,31 +205,48 @@ static struct ia_circles *_crossover(struct ia_circles *c1,
 	refresh_circles(ret);
 
 	if(get_rand() % 51503 == 4) {
+		printf("we have a winner\n");
 		while(ret->img->score > MIN(c1->img->score, c2->img->score)) {
 			_mutate(ret);
 			refresh_circles(ret);
 		}
-		printf("we have a winner\n");
 	}
+	ret->mother_index = c1->my_index;
+	ret->father_index = c2->my_index;
 
 	return ret;
 }
 
 static struct ia_circles **_new_generation(struct ia_circles *c1,
-    struct ia_circles *c2, struct ia_circles *c3)
+    struct ia_circles *c2, struct ia_circles *c3, struct ia_circles *c4)
 {
 	int idx;
 	struct ia_circles **generation;
 	generation = calloc(GEN_SIZE, sizeof(struct ia_circles *));
 
-	for(idx = 0; idx < (GEN_SIZE / 3); idx++) {
+	for(idx = 0; idx < (GEN_SIZE / 6); idx++) {
 		generation[idx] = _crossover(c1, c2);
+		generation[idx]->my_index = idx;
 	}
-	for(idx = (GEN_SIZE / 3); idx < (GEN_SIZE / 3 * 2); idx++) {
+	for(idx = (GEN_SIZE / 6); idx < (GEN_SIZE / 3); idx++) {
 		generation[idx] = _crossover(c1, c3);
+		generation[idx]->my_index = idx;
 	}
-	for(idx = (GEN_SIZE / 3 * 2); idx < GEN_SIZE; idx++) {
+	for(idx = (GEN_SIZE / 3); idx < (GEN_SIZE / 2); idx++) {
+		generation[idx] = _crossover(c1, c4);
+		generation[idx]->my_index = idx;
+	}
+	for(idx = (GEN_SIZE / 2); idx < ((GEN_SIZE * 2) / 3); idx++) {
 		generation[idx] = _crossover(c2, c3);
+		generation[idx]->my_index = idx;
+	}
+	for(idx = ((GEN_SIZE * 2) / 3); idx < ((GEN_SIZE * 5) / 6); idx++) {
+		generation[idx] = _crossover(c2, c4);
+		generation[idx]->my_index = idx;
+	}
+	for(idx = ((GEN_SIZE * 5) / 6); idx < GEN_SIZE; idx++) {
+		generation[idx] = _crossover(c3, c4);
+		generation[idx]->my_index = idx;
 	}
 
 	qsort(generation, GEN_SIZE, sizeof(struct ia_circles *),
@@ -287,7 +304,7 @@ struct ia_circles *do_ga()
 	uint64_t counter = 0;
 	bool found_perfect_solution = false;
 	struct ia_circles **generation;
-	struct ia_circles *seed1, *seed2 = NULL, *seed3, *best, *ret;
+	struct ia_circles *seed1, *seed2 = NULL, *seed3, *seed4, *best, *ret;
 	qsort(circle_pool, _num_gen, sizeof(struct ia_circles),
 	    (__compar_fn_t)_score_compare);
 	int idx;
@@ -297,7 +314,7 @@ struct ia_circles *do_ga()
 	}
 
 	generation = _new_generation(&circle_pool[0], &circle_pool[1],
-	    &circle_pool[_num_gen - 1]); 
+	    &circle_pool[_num_gen - 1], &circle_pool[2]); 
 
 	best = clone_circles(generation[0]);
 
@@ -329,6 +346,9 @@ struct ia_circles *do_ga()
 			seed3 = clone_circles(generation[get_rand() % (GEN_SIZE / 2) + 2]);
 		}
 
+		seed4 = clone_circles(
+		    generation[(get_rand() % (GEN_SIZE / 2)) + (GEN_SIZE / 2)]);
+
 		if(generation[0]->img->score == generation[1]->img->score) {
 			_seed_mutate(seed1);
 			_seed_mutate(seed2);
@@ -337,6 +357,7 @@ struct ia_circles *do_ga()
 		refresh_circles(seed1);
 		refresh_circles(seed2);
 		refresh_circles(seed3);
+		refresh_circles(seed4);
 #if 0
 		while(seed1->img->score > best->img->score) {
 			_seed_mutate(seed1);
@@ -354,6 +375,7 @@ struct ia_circles *do_ga()
 		sort_circles(seed1);
 		sort_circles(seed2);
 		sort_circles(seed3);
+		sort_circles(seed4);
 
 		if(counter % 100 == 0) {
 			printf("mutation round\n");
@@ -373,18 +395,22 @@ struct ia_circles *do_ga()
 		_free_generation(generation);
 		free(generation);
 
-		generation = _new_generation(seed1, seed2, seed3);
+		generation = _new_generation(seed1, seed2, seed3, seed4);
 		
 		free_circles(seed1);
 		free_circles(seed2);
 		free_circles(seed3);
+		free_circles(seed4);
 		free(seed1);
 		free(seed2);
 		free(seed3);
+		free(seed4);
 	
 		for(idx = 0; idx < 5; idx++) {
-			printf("%lu generation[%d] = %lu\n", counter, idx,
-			    generation[idx]->img->score);
+			printf("%lu generation[%d] = %lu; mother = %ld, father = %ld\n",
+			    counter, idx, generation[idx]->img->score,
+			    generation[idx]->mother_index,
+			    generation[idx]->father_index);
 		}
 		if(generation[0]->img->score == 0) {
 			found_perfect_solution = true;

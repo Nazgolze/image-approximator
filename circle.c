@@ -132,6 +132,9 @@ void init_circles(struct ia_circles *circles,
 		circles->circles[ix].color.b = get_rand() % 5;
 		circles->circles[ix].radius = get_rand() % 5 + 5;
 	}
+	circles->my_index = -1;
+	circles->father_index = -1;
+	circles->mother_index = -1;
 	
 	_render(circles);
 	circles->img = img_from_GL(); 
@@ -171,6 +174,9 @@ struct ia_circles *clone_circles(struct ia_circles *c)
 	    sizeof(struct ia_circle));
 	memcpy(ret_circles->circles, c->circles,
 	    ret_circles->num_circles * sizeof(struct ia_circle));
+	ret_circles->my_index = c->my_index;
+	ret_circles->father_index = c->father_index;
+	ret_circles->mother_index = c->mother_index;
 
 	return ret_circles;
 }

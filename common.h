@@ -35,6 +35,9 @@ struct ia_circles {
 	struct ia_circle *circles;
 	uint64_t num_circles;
 	struct img_bitmap *img;
+	int64_t my_index;
+	int64_t father_index;
+	int64_t mother_index;
 };
 
 struct img_bitmap {
