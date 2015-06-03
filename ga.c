@@ -226,27 +226,21 @@ static struct ia_circles **_new_generation(struct ia_circles *c1,
 
 	for(idx = 0; idx < (GEN_SIZE / 6); idx++) {
 		generation[idx] = _crossover(c1, c2);
-		generation[idx]->my_index = idx;
 	}
 	for(idx = (GEN_SIZE / 6); idx < (GEN_SIZE / 3); idx++) {
 		generation[idx] = _crossover(c1, c3);
-		generation[idx]->my_index = idx;
 	}
 	for(idx = (GEN_SIZE / 3); idx < (GEN_SIZE / 2); idx++) {
 		generation[idx] = _crossover(c1, c4);
-		generation[idx]->my_index = idx;
 	}
 	for(idx = (GEN_SIZE / 2); idx < ((GEN_SIZE * 2) / 3); idx++) {
 		generation[idx] = _crossover(c2, c3);
-		generation[idx]->my_index = idx;
 	}
 	for(idx = ((GEN_SIZE * 2) / 3); idx < ((GEN_SIZE * 5) / 6); idx++) {
 		generation[idx] = _crossover(c2, c4);
-		generation[idx]->my_index = idx;
 	}
 	for(idx = ((GEN_SIZE * 5) / 6); idx < GEN_SIZE; idx++) {
 		generation[idx] = _crossover(c3, c4);
-		generation[idx]->my_index = idx;
 	}
 
 	qsort(generation, GEN_SIZE, sizeof(struct ia_circles *),
@@ -254,6 +248,7 @@ static struct ia_circles **_new_generation(struct ia_circles *c1,
 
 	for(idx = 0; idx < GEN_SIZE; idx++) {
 		sort_circles(generation[idx]);
+		generation[idx]->my_index = idx;
 	}
 
 	return generation;
