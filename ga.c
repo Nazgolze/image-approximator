@@ -40,8 +40,15 @@ static void _mutate(struct ia_circles *circles)
 {
 	// basically a stochastic hill climbing algorithm, with some
 	// allowance for errors 
+	if(!circles) {
+		printfe("circles: is NULL");
+		return;
+	}
 	int idx, max_tries = 0;
 	for(idx = 0; idx < circles->num_circles; idx++) {
+		if(ia_cfg.quit) {
+			return;
+		}
 		printfd("Mutating circle %d/%d\n",
 			idx,
 			circles->num_circles);
@@ -52,8 +59,8 @@ static void _mutate(struct ia_circles *circles)
 		struct img_bitmap *_img = circles->img;
 		struct img_bitmap *_img_prev = circles_prev->img;
 
-		//printf("_img->score = %ld\n", _img->score);
-		//printf("_img_prev->score = %ld\n", _img_prev->score);
+		//printfi("_img->score = %ld\n", _img->score);
+		//printfi("_img_prev->score = %ld\n", _img_prev->score);
 		if((_img->score - _img_prev->score) > 0) {
 			max_tries++;
 			memcpy(&circles->circles[idx],
@@ -78,6 +85,9 @@ static void _mini_mutate(struct ia_circles *circles, int *indices,
 {
 	int idx, max_tries = 0;
 	for(idx = 0; idx < indices_len; idx++) {
+		if(ia_cfg.quit) {
+			return;
+		}
 		struct ia_circles *circles_prev = clone_circles(circles);
 		ia_random_action(&circles->circles[indices[idx]]);
 		refresh_circles(circles);
@@ -85,8 +95,8 @@ static void _mini_mutate(struct ia_circles *circles, int *indices,
 		struct img_bitmap *_img = circles->img;
 		struct img_bitmap *_img_prev = circles_prev->img;
 
-		//printf("_img->score = %ld\n", _img->score);
-		//printf("_img_prev->score = %ld\n", _img_prev->score);
+		//printfi("_img->score = %ld\n", _img->score);
+		//printfi("_img_prev->score = %ld\n", _img_prev->score);
 		if((_img->score - _img_prev->score) > 0) {
 			max_tries++;
 			memcpy(&circles->circles[indices[idx]],
@@ -289,10 +299,30 @@ void init_ga(int num_circles, int num_gen)
 		refresh_circles(&circle_pool[idx]);
 		sort_circles(&circle_pool[idx]);
 	}
-	
+
 	end_time_str = end_time(&tp1, &tp2, "time");
-	printf("%s\nsee, that didn't take too long, did it?\n", end_time_str);
+	printfi("%s\nsee, that didn't take too long, did it?\n", end_time_str);
 	free(end_time_str);
+}
+
+void _mutation(int counter)
+{
+	if(ia_cfg.quit) {
+		return;
+	}
+	int idx;
+	printfi("mutation round\n");
+	for(idx = 0; idx < (counter / ia_cfg.mutation) + 2; idx++) {
+		_mutate(ia_cfg.seed1);
+		_mutate(ia_cfg.seed2);
+		_mutate(ia_cfg.seed3);
+	}
+	sort_circles(ia_cfg.seed1);
+	sort_circles(ia_cfg.seed2);
+	sort_circles(ia_cfg.seed3);
+	refresh_circles(ia_cfg.seed1);
+	refresh_circles(ia_cfg.seed2);
+	refresh_circles(ia_cfg.seed3);
 }
 
 struct ia_circles *do_ga()
@@ -300,110 +330,88 @@ struct ia_circles *do_ga()
 	uint64_t counter = 0;
 	bool found_perfect_solution = false;
 	struct ia_circles **generation;
-	struct ia_circles *seed1, *seed2 = NULL, *seed3, *seed4, *best, *ret;
+	//struct ia_circles *seed1, *seed2 = NULL, *seed3, *seed4, *best, *ret;
 	qsort(circle_pool, _num_gen, sizeof(struct ia_circles),
 	    (__compar_fn_t)_score_compare);
 	int idx;
 	for(idx = 0; idx < _num_gen; idx++) {
-		printf("circles_pool[%d] = %lu\n", idx,
+		printfi("circles_pool[%d] = %lu\n", idx,
 		    circle_pool[idx].img->score);
 	}
 
 	generation = _new_generation(&circle_pool[0], &circle_pool[1],
 	    &circle_pool[_num_gen - 1], &circle_pool[2]); 
 
-	best = clone_circles(generation[0]);
+	ia_cfg.best = clone_circles(generation[0]);
 
 	for(idx = 0; idx < GEN_SIZE; idx++) {
-		printf("%lu generation[%d] = %lu\n", counter, idx,
+		printfi("%lu generation[%d] = %lu\n", counter, idx,
 		    generation[idx]->img->score);
 	}
 
-#if 0
-	for(idx = 0; idx < 10; idx++) {
-		_mutate(generation[0]);
-		_mutate(generation[1]);
-	}
-#endif
 	do {
 		counter++;
-		seed1 = clone_circles(generation[0]);
-		seed2 = clone_circles(generation[1]);
-		if(abs(seed1->img->score - generation[GEN_SIZE / 2]->img->score) < 1000) {
-			free_circles(seed2);
-			init_circles(seed2, seed2->num_circles);
+		ia_cfg.seed1 = clone_circles(generation[0]);
+		ia_cfg.seed2 = clone_circles(generation[1]);
+		if(abs(ia_cfg.seed1->img->score - generation[GEN_SIZE / 2]->img->score) < 1000) {
+			free_circles(ia_cfg.seed2);
+			init_circles(ia_cfg.seed2, ia_cfg.seed2->num_circles);
 		}
-		if(best->img->score < seed1->img->score && counter > 10) {
-			seed3 = clone_circles(best);
+		if(ia_cfg.best->img->score < ia_cfg.seed1->img->score && counter > 10) {
+			ia_cfg.seed3 = clone_circles(ia_cfg.best);
 		} else {
-			free_circles(best);
-			free(best);
-			best = clone_circles(seed1);
-			seed3 = clone_circles(generation[get_rand() % (GEN_SIZE / 2) + 2]);
+			free_circles(ia_cfg.best);
+			free(ia_cfg.best);
+			ia_cfg.best = clone_circles(ia_cfg.seed1);
+			ia_cfg.seed3 = clone_circles(generation[get_rand() % (GEN_SIZE / 2) + 2]);
 		}
 
-		seed4 = clone_circles(
+		ia_cfg.seed4 = clone_circles(
 		    generation[(get_rand() % (GEN_SIZE / 2)) + (GEN_SIZE / 2)]);
 
 		if(generation[0]->img->score == generation[1]->img->score) {
-			_seed_mutate(seed1);
-			_seed_mutate(seed2);
-			_seed_mutate(seed3);
+			_seed_mutate(ia_cfg.seed1);
+			_seed_mutate(ia_cfg.seed2);
+			_seed_mutate(ia_cfg.seed3);
 		}
-		refresh_circles(seed1);
-		refresh_circles(seed2);
-		refresh_circles(seed3);
-		refresh_circles(seed4);
-#if 0
-		while(seed1->img->score > best->img->score) {
-			_seed_mutate(seed1);
-			refresh_circles(seed1);
+		refresh_circles(ia_cfg.seed1);
+		refresh_circles(ia_cfg.seed2);
+		refresh_circles(ia_cfg.seed3);
+		refresh_circles(ia_cfg.seed4);
+		sort_circles(ia_cfg.seed1);
+		sort_circles(ia_cfg.seed2);
+		sort_circles(ia_cfg.seed3);
+		sort_circles(ia_cfg.seed4);
+
+		switch(ia_cfg.action) {
+			case IA_USER_MUTATE:
+				_mutation(counter);
+				break;
+			default:
+				break;
 		}
-		while(seed2->img->score > best->img->score) {
-			_seed_mutate(seed2);
-			refresh_circles(seed2);
-		}
-		while(seed3->img->score > best->img->score) {
-			_seed_mutate(seed3);
-			refresh_circles(seed3);
-		}
-#endif
-		sort_circles(seed1);
-		sort_circles(seed2);
-		sort_circles(seed3);
-		sort_circles(seed4);
+		ia_cfg.action = IA_USER_NONE;
 
 		if(counter % ia_cfg.mutation == 0) {
-			printf("mutation round\n");
-			for(idx = 0; idx < (counter / ia_cfg.mutation) + 2; idx++) {
-				_mutate(seed1);
-				_mutate(seed2);
-				_mutate(seed3);
-			}
-			sort_circles(seed1);
-			sort_circles(seed2);
-			sort_circles(seed3);
-			refresh_circles(seed1);
-			refresh_circles(seed2);
-			refresh_circles(seed3);
+			_mutation(counter);
 		}
 
 		_free_generation(generation);
 		free(generation);
 
-		generation = _new_generation(seed1, seed2, seed3, seed4);
-		
-		free_circles(seed1);
-		free_circles(seed2);
-		free_circles(seed3);
-		free_circles(seed4);
-		free(seed1);
-		free(seed2);
-		free(seed3);
-		free(seed4);
+		generation = _new_generation(ia_cfg.seed1, ia_cfg.seed2, ia_cfg.seed3, ia_cfg.seed4);
+
+		free_circles(ia_cfg.seed1);
+		free_circles(ia_cfg.seed2);
+		free_circles(ia_cfg.seed3);
+		free_circles(ia_cfg.seed4);
+		free(ia_cfg.seed1);
+		free(ia_cfg.seed2);
+		free(ia_cfg.seed3);
+		free(ia_cfg.seed4);
 	
 		for(idx = 0; idx < 5; idx++) {
-			printf("%lu generation[%d] = %lu; mother = %ld, father = %ld\n",
+			printfi("%lu generation[%d] = %lu; mother = %ld, father = %ld\n",
 			    counter, idx, generation[idx]->img->score,
 			    generation[idx]->mother_index,
 			    generation[idx]->father_index);
@@ -411,10 +419,10 @@ struct ia_circles *do_ga()
 		if(generation[0]->img->score == 0) {
 			found_perfect_solution = true;
 		}
-	} while(found_perfect_solution == false);
-	ret = clone_circles(generation[0]);
+	} while(found_perfect_solution == false && !ia_cfg.quit);
+	ia_cfg.ret = clone_circles(generation[0]);
 	_free_generation(generation);
 	free(generation);
 
-	return ret;
+	return ia_cfg.ret;
 }

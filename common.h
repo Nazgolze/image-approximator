@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <stdbool.h>
 #include <time.h>
 
 #include <allegro5/allegro.h>
@@ -16,6 +17,7 @@
 
 #define printfe(...) printfl(IA_ERR, ##__VA_ARGS__);
 #define printfd(...) printfl(IA_DEBUG, ##__VA_ARGS__);
+#define printfi(...) printfl(IA_INFO, ##__VA_ARGS__);
 
 #define streq(str1,str2) !strcmp(str1,str2)
 
@@ -55,6 +57,11 @@ enum ia_actions {
 	IA_RECOLOR
 };
 
+enum ia_user_actions {
+	IA_USER_NONE = 0,
+	IA_USER_MUTATE,
+};
+
 enum ia_color_enum {
 	IA_RED,
 	IA_GREEN,
@@ -83,11 +90,23 @@ struct ia_cfg_st {
 	struct img_bitmap *best_image;
 	enum ia_print_level print_level;
 
-
 	int num_circles;
 	int num_sets; /**< # sets of circles */
 	int num_init; /**< # sets to init */
 	int mutation; /**< How often to perform a mutation */
+
+	FILE *log;
+
+	// Internal settings
+	bool quit;
+	enum ia_user_actions action;
+
+	struct ia_circles *seed1;
+	struct ia_circles *seed2;
+	struct ia_circles *seed3;
+	struct ia_circles *seed4;
+	struct ia_circles *best;
+	struct ia_circles *ret;
 };
 struct ia_cfg_st ia_cfg;
 

@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <pthread.h>
 
 #include <GL/glut.h>
 #include <GL/glext.h>
@@ -47,7 +48,7 @@ static void render(void)
 	start_time(&tp1);
 
 	end_time_str = end_time(&tp1, &tp2, "time");
-	printf("%s\n", end_time_str);
+	printfi("%s\n", end_time_str);
 	free(end_time_str);
 }
 
@@ -81,7 +82,60 @@ static void init(void)
 	glOrtho(0, w, 0, h, -1, 1);
 
 	glViewport(0, 0, w, h);
+}
 
+void _print_input_help()
+{
+	printf("mutate: Enter mutation phase\n");
+	printf("--------------------------\n");
+	printf("help: Show the input help\n");
+	printf("exit or quit: Exit the program\n");
+
+}
+
+void *_user_input(void *arg)
+{
+	char line[512];
+	while(1) {
+		printf(">> ");
+		if(fgets(line, sizeof(line), stdin)) {
+			strip_newline(line);
+			if(!strlen(line)) {
+				continue;
+			}
+			if(streq(line, "quit") || streq(line, "exit")) {
+				printf("Exiting the program, please wait....\n");
+				ia_cfg.quit = true;
+				return NULL;
+			} else if(streq(line, "help")) {
+				_print_input_help();
+			} else if(streq(line, "mutate")) {
+				ia_cfg.action = IA_USER_MUTATE;
+			}
+		}
+	}
+	return NULL;
+}
+
+void *_run(void *arg)
+{
+	glutInitDisplayMode(GLUT_RGB | GLUT_SINGLE);
+	glutInitWindowSize(ia_cfg.screen_width, ia_cfg.screen_height);
+	glutCreateWindow("Image Approximator");
+	glViewport(0, 0, ia_cfg.screen_width, ia_cfg.screen_height);
+	printfi("%s\n", glGetString(GL_VERSION));
+	glutDisplayFunc(render);
+	glutKeyboardFunc(handle_keys);
+	glutIdleFunc(render);
+	glutReshapeFunc(resize);
+
+	init();
+	printfi("Num circles: %d\n", ia_cfg.num_circles);
+	init_ga(ia_cfg.num_circles, ia_cfg.num_init);
+	struct ia_circles *awesome = do_ga();
+	printf("%ld\n", awesome->img->score);
+	ia_cfg_free();
+	return NULL;
 }
 
 /**
@@ -160,25 +214,13 @@ int main(int argc, char **argv)
 	ia_cfg_print();
 
 	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_RGB | GLUT_SINGLE);
-	glutInitWindowSize(ia_cfg.screen_width, ia_cfg.screen_height);
-	glutCreateWindow("Image Approximator");
-	glViewport(0, 0, ia_cfg.screen_width, ia_cfg.screen_height);
-	printf("%s\n", glGetString(GL_VERSION));
-	glutDisplayFunc(render);
-	glutKeyboardFunc(handle_keys);
-	glutIdleFunc(render);
-	glutReshapeFunc(resize);
 
-	init();
+	// Create 2 threads
+	pthread_t th_input, th_run;
+	pthread_create(&th_input, NULL, _user_input, NULL);
+	pthread_create(&th_run, NULL, _run, NULL);
 
-	init_ga(ia_cfg.num_circles, ia_cfg.num_init);
-	struct ia_circles *awesome = do_ga();
-	printf("%ld\n", awesome->img->score);
-	ia_cfg_free();
-	return SUCCESS;
-
-	// FIXME: What is this for. It will never be run??
-	glutMainLoop();
+	pthread_join(th_input, NULL);
+	pthread_join(th_run, NULL);
 	return SUCCESS;
 }

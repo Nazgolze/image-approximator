@@ -56,7 +56,6 @@ uint32_t get_rand()
 	}
 	random_int = _random_data[_random_index];
 	_random_index = (_random_index + 1) % RAND_SIZE;
-	//printf("random_int = %u\n", random_int);
 	return random_int;
 }
 
@@ -198,16 +197,22 @@ int printfl(enum ia_print_level pl, const char *fmt, ...)
 	if(error == ERROR)
 		return error;
 	va_end(ap);
+	if(!ia_cfg.log) {
+		printf("[ERROR no ia_cfg.log]: %s\n", str);
+		fflush(stdout);
+		return error;
+	}
 
 	if(pl == IA_INFO && ia_cfg.print_level >= IA_INFO) {
-		printf("%s\n", str);
+		fprintf(ia_cfg.log, "%s\n", str);
 	} else if(pl == IA_ERR && ia_cfg.print_level >= IA_ERR) {
 		fprintf(stderr, "Error: %s\n", str);
+		fprintf(ia_cfg.log, "Error: %s\n", str);
 		fflush(stderr);
 	} else if(pl == IA_DEBUG && ia_cfg.print_level >= IA_DEBUG) {
-		printf("%s-%d: %s\n", __FUNCTION__, __LINE__, str);
-		fflush(stdout);
+		fprintf(ia_cfg.log, "%s-%d: %s\n", __FUNCTION__, __LINE__, str);
 	}
+	fflush(ia_cfg.log);
 
 	return error;
 }
@@ -239,6 +244,11 @@ void ia_cfg_init()
 	ia_cfg.num_sets = 2700;
 	ia_cfg.num_init = 500;
 	ia_cfg.mutation = 100;
+
+	ia_cfg.log = fopen("log", "w");
+	if(!ia_cfg.log) {
+		printfe("Failed to open log\n");
+	}
 }
 
 /**
@@ -246,14 +256,14 @@ void ia_cfg_init()
  */
 void ia_cfg_print()
 {
-	printf("Screen: width: %d, height: %d\n",
+	printfi("Screen: width: %d, height: %d\n",
 		ia_cfg.screen_width,
 		ia_cfg.screen_height);
-	printf("Circles: %d, Sets: %d, Init sets: %d\n",
+	printfi("Circles: %d, Sets: %d, Init sets: %d\n",
 		ia_cfg.num_circles,
 		ia_cfg.num_sets,
 		ia_cfg.num_init);
-	printf("Mutation round every %d generations\n",
+	printfi("Mutation round every %d generations\n",
 		ia_cfg.mutation);
 }
 
@@ -267,6 +277,9 @@ void ia_cfg_free()
 	}
 	if(ia_cfg.best_image) {
 		// Free the image
+	}
+	if(ia_cfg.log) {
+		fclose(ia_cfg.log);
 	}
 }
 

@@ -85,6 +85,9 @@ static void _render(struct ia_circles *l_circles)
 
 void refresh_circles(struct ia_circles *l_circles)
 {
+	if(ia_cfg.quit) {
+		return;
+	}
 	img_free(l_circles->img);
 	_render(l_circles);
 	l_circles->img = img_from_GL();
@@ -127,6 +130,9 @@ void init_circles(struct ia_circles *circles,
 
 void sort_circles(struct ia_circles *circles)
 {
+	if(ia_cfg.quit) {
+		return;
+	}
 	if(!circles) {
 		printfd("circles is null");
 		return;
