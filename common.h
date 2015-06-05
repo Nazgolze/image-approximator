@@ -17,6 +17,10 @@
 #define printfe(...) printfl(IA_ERR, ##__VA_ARGS__);
 #define printfd(...) printfl(IA_DEBUG, ##__VA_ARGS__);
 
+#define streq(str1,str2) !strcmp(str1,str2)
+
+#define GEN_SIZE ia_cfg.num_sets
+
 // data definitions
 struct ia_color {
 	uint8_t r;
@@ -70,10 +74,22 @@ enum ia_print_level {
 	IA_DEBUG,
 };
 
-// global variables
-int screen_width, screen_height;
-struct img_bitmap *reference_image, *best_image;
-enum ia_print_level print_level;
+// Settings
+struct ia_cfg_st {
+	int screen_width; /**< The screen width */
+	int screen_height; /**< The screen height */
+
+	struct img_bitmap *reference_image;
+	struct img_bitmap *best_image;
+	enum ia_print_level print_level;
+
+
+	int num_circles;
+	int num_sets; /**< # sets of circles */
+	int num_init; /**< # sets to init */
+	int mutation; /**< How often to perform a mutation */
+};
+struct ia_cfg_st ia_cfg;
 
 // function declarations
 uint32_t get_rand(void);
@@ -82,4 +98,10 @@ char *end_time(struct timespec *, struct timespec *, char *, ...);
 void ia_random_action(struct ia_circle *);
 
 int printfl(enum ia_print_level, const char *fmt, ...);
+void strip_newline(char *);
+
+void ia_cfg_init();
+void ia_cfg_print();
+void ia_cfg_free();
+int ia_cfg_read(const char *);
 #endif

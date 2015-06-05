@@ -5,8 +5,6 @@
 #include "circle.h"
 #include "image.h"
 
-#define GEN_SIZE 2700
-
 static bool _is_initialized = false;
 static int _num_gen;
 static struct ia_circles *circle_pool = NULL;
@@ -44,6 +42,9 @@ static void _mutate(struct ia_circles *circles)
 	// allowance for errors 
 	int idx, max_tries = 0;
 	for(idx = 0; idx < circles->num_circles; idx++) {
+		printfd("Mutating circle %d/%d\n",
+			idx,
+			circles->num_circles);
 		struct ia_circles *circles_prev = clone_circles(circles);
 		ia_random_action(&circles->circles[idx]);
 		refresh_circles(circles);
@@ -372,9 +373,9 @@ struct ia_circles *do_ga()
 		sort_circles(seed3);
 		sort_circles(seed4);
 
-		if(counter % 100 == 0) {
+		if(counter % ia_cfg.mutation == 0) {
 			printf("mutation round\n");
-			for(idx = 0; idx < (counter / 100) + 2; idx++) {
+			for(idx = 0; idx < (counter / ia_cfg.mutation) + 2; idx++) {
 				_mutate(seed1);
 				_mutate(seed2);
 				_mutate(seed3);
