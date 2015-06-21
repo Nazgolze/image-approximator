@@ -10,44 +10,27 @@
 #include "circle.h"
 #include "image.h"
 
+#define COMPARE_VAL(a, b) \
+	do { \
+		if(a < b) \
+			return -1; \
+		if(a > b) \
+			return 1; \
+	} while(0)
+
 static int _circle_compare(const struct ia_circle *c1,
     const struct ia_circle *c2)
 {
-	if(c1->radius < c2->radius) {
-		return -1;
-	} else if(c1->radius > c2->radius) {
-		return 1;
-	}
+	COMPARE_VAL(c1->radius, c2->radius);
 
-	if(c1->color.r < c2->color.r) {
-		return -1;
-	} else if(c1->color.r > c2->color.r) {
-		return 1;
-	}
+	// Color
+	COMPARE_VAL(c1->color.r, c2->color.r);
+	COMPARE_VAL(c1->color.g, c2->color.g);
+	COMPARE_VAL(c1->color.b, c2->color.b);
 
-	if(c1->color.g < c2->color.g) {
-		return -1;
-	} else if(c1->color.g > c2->color.g) {
-		return 1;
-	}
-
-	if(c1->color.b < c2->color.b) {
-		return -1;
-	} else if(c1->color.b > c2->color.b) {
-		return 1;
-	}
-
-	if(c1->x < c2->x) {
-		return -1;
-	} else if(c1->x > c2->x) {
-		return 1;
-	}
-
-	if(c1->y < c2->y) {
-		return -1;
-	} else if(c1->y > c2->y) {
-		return 1;
-	}
+	// Position
+	COMPARE_VAL(c1->x, c2->x);
+	COMPARE_VAL(c1->y, c2->y);
 
 	return 0;
 }
@@ -102,10 +85,13 @@ static void _render(struct ia_circles *l_circles)
 
 void refresh_circles(struct ia_circles *l_circles)
 {
+	if(ia_cfg.quit) {
+		return;
+	}
 	img_free(l_circles->img);
 	_render(l_circles);
 	l_circles->img = img_from_GL();
-	img_assign_score(l_circles->img, reference_image);
+	img_assign_score(l_circles->img, ia_cfg.reference_image);
 }
 
 
@@ -125,8 +111,8 @@ void init_circles(struct ia_circles *circles,
 	circles->num_circles = number_circles;
 
 	for(int ix = 0; ix < circles->num_circles; ix++) {
-		circles->circles[ix].x = get_rand() % screen_width;
-		circles->circles[ix].y = get_rand() % screen_height;
+		circles->circles[ix].x = get_rand() % ia_cfg.screen_width;
+		circles->circles[ix].y = get_rand() % ia_cfg.screen_height;
 		circles->circles[ix].color.r = get_rand() % 5;
 		circles->circles[ix].color.g = get_rand() % 5;
 		circles->circles[ix].color.b = get_rand() % 5;
@@ -144,6 +130,9 @@ void init_circles(struct ia_circles *circles,
 
 void sort_circles(struct ia_circles *circles)
 {
+	if(ia_cfg.quit) {
+		return;
+	}
 	if(!circles) {
 		printfd("circles is null");
 		return;

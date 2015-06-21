@@ -10,10 +10,10 @@ static unsigned char *_get_raw_image()
 {
 	glPixelStorei(GL_PACK_ALIGNMENT,1);
 	unsigned char *image;
-	unsigned int size = screen_width * screen_height * 3;
+	unsigned int size = ia_cfg.screen_width * ia_cfg.screen_height * 3;
 	image = calloc(1, size);
 	glReadBuffer(GL_FRONT);
-	glReadPixels(0, 0, screen_width, screen_height,
+	glReadPixels(0, 0, ia_cfg.screen_width, ia_cfg.screen_height,
 	    GL_RGB, GL_UNSIGNED_BYTE, image);
 	return image;
 }
@@ -21,19 +21,19 @@ static unsigned char *_get_raw_image()
 static void _flip(unsigned char *image)
 {
 	int count = 0, idx;
-	unsigned char temp_image[screen_width * 3];
+	unsigned char temp_image[ia_cfg.screen_width * 3];
 	memset(&temp_image, 0, sizeof(temp_image));
 
-	for(idx = screen_height - 1; idx >= 0 && count < idx; idx--) {
+	for(idx = ia_cfg.screen_height - 1; idx >= 0 && count < idx; idx--) {
 		memcpy(&temp_image,
-		    image + (screen_width * 3 * count),
-		    screen_width * 3);
-		memcpy(image + (screen_width * 3 * count),
-		    image + (screen_width * 3 * idx),
-		    screen_width * 3);
-		memcpy(image + (screen_width * 3 * idx),
+		    image + (ia_cfg.screen_width * 3 * count),
+		    ia_cfg.screen_width * 3);
+		memcpy(image + (ia_cfg.screen_width * 3 * count),
+		    image + (ia_cfg.screen_width * 3 * idx),
+		    ia_cfg.screen_width * 3);
+		memcpy(image + (ia_cfg.screen_width * 3 * idx),
 		    &temp_image,
-		    screen_width * 3);
+		    ia_cfg.screen_width * 3);
 		count++;
 	}
 	//printf("idx = %d\ncount = %d\n", idx, count);
@@ -81,7 +81,7 @@ struct img_bitmap *img_from_GL()
 
 	ALLEGRO_BITMAP *bmp;
 	al_set_new_bitmap_flags(ALLEGRO_MEMORY_BITMAP);
-	bmp = al_create_bitmap(screen_width, screen_height);
+	bmp = al_create_bitmap(ia_cfg.screen_width, ia_cfg.screen_height);
 
 	al_set_target_bitmap(bmp);
 
@@ -101,8 +101,8 @@ void img_assign_score(struct img_bitmap *img, struct img_bitmap *ref)
 	int idx, jdx, diff = 0;
 	int64_t total_difference = 0;
 	ALLEGRO_COLOR bpc, rpc;
-	for(idx = 0; idx < screen_width; idx++) {
-		for(jdx = 0; jdx < screen_height; jdx++) {
+	for(idx = 0; idx < ia_cfg.screen_width; idx++) {
+		for(jdx = 0; jdx < ia_cfg.screen_height; jdx++) {
 			unsigned char br, bg, bb, rr, rg, rb;
 			bpc = al_get_pixel(img->bmp, idx, jdx);
 			rpc = al_get_pixel(ref->bmp, idx, jdx);
