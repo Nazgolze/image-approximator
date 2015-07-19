@@ -154,10 +154,11 @@ void ia_random_action(struct ia_circle *circle)
 		break;
 	case IA_RECOLOR:
 		tmp = get_rand() % 3;
-		unsigned char r,g,b, new;
+		unsigned char r,g,b,a, new;
 		r = circle->color.r;
 		g = circle->color.g;
 		b = circle->color.b;
+		a = circle->color.a;
 		switch(tmp) {
 		case IA_RED:
 			if(get_rand() % 2) {
@@ -182,6 +183,14 @@ void ia_random_action(struct ia_circle *circle)
 				new = MAX(0, b - c_factor);
 			}
 			circle->color.b = new;
+			break;
+		case IA_ALPHA:
+			if(get_rand() % 2) {
+				new = MIN(255, a + c_factor);
+			} else {
+				new = MAX(0, a - c_factor);
+			}
+			circle->color.a = new;
 			break;
 		}
 	}

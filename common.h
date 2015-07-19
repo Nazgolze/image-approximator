@@ -28,6 +28,7 @@ struct ia_color {
 	uint8_t r;
 	uint8_t g;
 	uint8_t b;
+	uint8_t a;
 };
 
 struct ia_circle {
@@ -65,7 +66,8 @@ enum ia_user_actions {
 enum ia_color_enum {
 	IA_RED,
 	IA_GREEN,
-	IA_BLUE
+	IA_BLUE,
+	IA_ALPHA
 };
 
 enum ia_direction {
