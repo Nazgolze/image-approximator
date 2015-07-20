@@ -27,6 +27,7 @@ static int _circle_compare(const struct ia_circle *c1,
 	COMPARE_VAL(c1->color.r, c2->color.r);
 	COMPARE_VAL(c1->color.g, c2->color.g);
 	COMPARE_VAL(c1->color.b, c2->color.b);
+	COMPARE_VAL(c1->color.a, c2->color.a);
 
 	// Position
 	COMPARE_VAL(c1->x, c2->x);
@@ -45,9 +46,10 @@ static void _draw_circles(struct ia_circles *circles)
 		glBegin(GL_POLYGON);
 		x1 = (float)circles->circles[idx].x;
 		y1 = (float)circles->circles[idx].y;
-		glColor3ub(circles->circles[idx].color.r,
+		glColor4ub(circles->circles[idx].color.r,
 		    circles->circles[idx].color.g,
-		    circles->circles[idx].color.b);
+		    circles->circles[idx].color.b,
+		    circles->circles[idx].color.a);
 		radius = (double)circles->circles[idx].radius;
 		float theta = 0;
 		float theta2 = 6 * 3.14159265359 / 180;
@@ -74,12 +76,15 @@ static void _render(struct ia_circles *l_circles)
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_BLEND);
+#if 0	
 	glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
 	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE, GL_ONE, GL_ZERO);
+#endif
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 	_draw_circles(l_circles);
 
 	glDisable(GL_BLEND);
-
 	glFlush();
 }
 
@@ -113,9 +118,10 @@ void init_circles(struct ia_circles *circles,
 	for(int ix = 0; ix < circles->num_circles; ix++) {
 		circles->circles[ix].x = get_rand() % ia_cfg.screen_width;
 		circles->circles[ix].y = get_rand() % ia_cfg.screen_height;
-		circles->circles[ix].color.r = get_rand() % 5;
-		circles->circles[ix].color.g = get_rand() % 5;
-		circles->circles[ix].color.b = get_rand() % 5;
+		circles->circles[ix].color.r = get_rand() % 255;
+		circles->circles[ix].color.g = get_rand() % 255;
+		circles->circles[ix].color.b = get_rand() % 255;
+		circles->circles[ix].color.a = get_rand() % 50;
 		circles->circles[ix].radius = get_rand() % 5 + 5;
 	}
 	circles->my_index = -1;

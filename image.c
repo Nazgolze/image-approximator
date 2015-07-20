@@ -10,30 +10,30 @@ static unsigned char *_get_raw_image()
 {
 	glPixelStorei(GL_PACK_ALIGNMENT,1);
 	unsigned char *image;
-	unsigned int size = ia_cfg.screen_width * ia_cfg.screen_height * 3;
+	unsigned int size = ia_cfg.screen_width * ia_cfg.screen_height * 4;
 	image = calloc(1, size);
 	glReadBuffer(GL_FRONT);
 	glReadPixels(0, 0, ia_cfg.screen_width, ia_cfg.screen_height,
-	    GL_RGB, GL_UNSIGNED_BYTE, image);
+	    GL_RGBA, GL_UNSIGNED_BYTE, image);
 	return image;
 }
 
 static void _flip(unsigned char *image)
 {
 	int count = 0, idx;
-	unsigned char temp_image[ia_cfg.screen_width * 3];
+	unsigned char temp_image[ia_cfg.screen_width * 4];
 	memset(&temp_image, 0, sizeof(temp_image));
 
 	for(idx = ia_cfg.screen_height - 1; idx >= 0 && count < idx; idx--) {
 		memcpy(&temp_image,
-		    image + (ia_cfg.screen_width * 3 * count),
-		    ia_cfg.screen_width * 3);
-		memcpy(image + (ia_cfg.screen_width * 3 * count),
-		    image + (ia_cfg.screen_width * 3 * idx),
-		    ia_cfg.screen_width * 3);
-		memcpy(image + (ia_cfg.screen_width * 3 * idx),
+		    image + (ia_cfg.screen_width * 4 * count),
+		    ia_cfg.screen_width * 4);
+		memcpy(image + (ia_cfg.screen_width * 4 * count),
+		    image + (ia_cfg.screen_width * 4 * idx),
+		    ia_cfg.screen_width * 4);
+		memcpy(image + (ia_cfg.screen_width * 4 * idx),
 		    &temp_image,
-		    ia_cfg.screen_width * 3);
+		    ia_cfg.screen_width * 4);
 		count++;
 	}
 	//printf("idx = %d\ncount = %d\n", idx, count);
