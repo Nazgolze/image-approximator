@@ -231,7 +231,7 @@ int printf_console(const char *fmt, ...)
 		return error;
 	va_end(ap);
 	printfi("%s", str);
-	printf("\nCONSOLE: %s\n>> ", str);
+	console_print(str);
 	fflush(stdout);
 	return error;
 }

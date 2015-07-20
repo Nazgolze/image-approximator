@@ -96,6 +96,7 @@ struct ia_cfg_st {
 	int num_sets; /**< # sets of circles */
 	int num_init; /**< # sets to init */
 	int mutation; /**< How often to perform a mutation */
+	uint64_t cur_gen; /**< Current generation */
 
 	FILE *log;
 

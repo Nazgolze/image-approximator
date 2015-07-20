@@ -24,6 +24,7 @@
 #include "circle.h"
 #include "image.h"
 #include "ga.h"
+#include "console.h"
 
 #define ONE_TIME printf("%s-%d\n", __FUNCTION__, __LINE__); fflush(stdout);
 
@@ -98,8 +99,9 @@ void _print_input_help()
 void *_user_input(void *arg)
 {
 	char line[512];
+	console_init();
 	while(1) {
-		printf(">> ");
+		console_draw(NULL);
 		if(fgets(line, sizeof(line), stdin)) {
 			strip_newline(line);
 			if(!strlen(line)) {

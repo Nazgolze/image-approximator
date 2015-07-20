@@ -428,6 +428,7 @@ struct ia_circles *do_ga()
 
 	do {
 		counter++;
+		ia_cfg.cur_gen = counter;
 		perform_save = false;
 		ia_cfg.seed1 = clone_circles(generation[0]);
 		ia_cfg.seed2 = clone_circles(generation[1]);
