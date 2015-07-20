@@ -139,7 +139,8 @@ static void _seed_mutate(struct ia_circles *c)
 #define CROSS_R      0x08
 #define CROSS_G      0x10
 #define CROSS_B      0x20
-#define CROSS_ALL    0x3f
+#define CROSS_A      0x40
+#define CROSS_ALL    0x7f
 
 #define NEW_AVG(avg) avg = get_rand() % 2 ? true : false
 #define CROSS_ATTR(c1, c2, attr, attr_type, mask, chkmask)                     \
@@ -177,6 +178,7 @@ static void _cross(struct ia_circle *c1, struct ia_circle *c2)
 	CROSS_ATTR(c1, c2, color.r, uint8_t, mask, CROSS_R);
 	CROSS_ATTR(c1, c2, color.g, uint8_t, mask, CROSS_G);
 	CROSS_ATTR(c1, c2, color.b, uint8_t, mask, CROSS_B);
+	CROSS_ATTR(c1, c2, color.a, uint8_t, mask, CROSS_A);
 }
 
 static struct ia_circles *_crossover(struct ia_circles *c1,
