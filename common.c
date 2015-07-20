@@ -185,10 +185,14 @@ void ia_random_action(struct ia_circle *circle)
 			circle->color.b = new;
 			break;
 		case IA_ALPHA:
+			// Alpha can be at most 100 meaning 100% opaque
 			if(get_rand() % 2) {
-				new = MIN(255, a + c_factor);
+				new = MIN(100, a + c_factor);
 			} else {
 				new = MAX(0, a - c_factor);
+			}
+			if(new > 100) {
+				new = 100;
 			}
 			circle->color.a = new;
 			break;

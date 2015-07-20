@@ -353,13 +353,15 @@ void _save_generation_svg(
 		ia_cfg.screen_height);
 	for(ix = 0; ix < gen->num_circles; ix++) {
 		circle = &gen->circles[ix];
-		fprintf(fp, "<circle cx='%d' cy='%d' r='%d' fill='rgb(%u,%u,%u)'/>\n",
+		fprintf(fp, "<circle cx='%d' cy='%d' r='%d' fill='rgba(%u,%u,%u,%s%u)'/>\n",
 			circle->x,
 			circle->y,
 			circle->radius,
 			circle->color.r,
 			circle->color.g,
-			circle->color.b);
+			circle->color.b,
+			circle->color.a < 100 ? "." : "",
+			circle->color.a);
 	}
 	fprintf(fp, "</svg>\n");
 	fclose(fp);
@@ -391,7 +393,7 @@ void _save_generation(
 	gen = generation[0];
 	// Save the image
 	snprintf(img_path, sizeof(img_path),
-		"%s/generation-%lu.jpg",
+		"%s/generation-%lu.png",
 		OUTPUT_PATH, counter);
 	al_save_bitmap(img_path, gen->img->bmp);
 	// Save the circle layout

@@ -19,4 +19,7 @@ main: $(OBJECTS) Makefile
 	$(CC) $(CFLAGS) -fPIC -lc $(INCFLAGS) -c $<
 
 clean:
-	(rm -f *.o main)
+	(rm -f *.o main output/*)
+
+clean_images:
+	(rm -rf output/*)
