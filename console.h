@@ -5,5 +5,6 @@
 
 void console_init();
 void console_draw();
+int console_print(const char *fmt, ...);
 
 #endif // CONSOLE_H

@@ -218,25 +218,6 @@ int printfl(enum ia_print_level pl, const char *fmt, ...)
 }
 
 /**
- * Prints to a message to the console and to the log via INFO level
- */
-int printf_console(const char *fmt, ...)
-{
-	int error = SUCCESS;
-	char str[2048] = {0};
-	va_list ap;
-	va_start(ap, fmt);
-	error = vsnprintf(str, sizeof(str), fmt, ap);
-	if(error == ERROR)
-		return error;
-	va_end(ap);
-	printfi("%s", str);
-	console_print(str);
-	fflush(stdout);
-	return error;
-}
-
-/**
  * Strip newline from the passed in string
  *
  * @param str The string to update

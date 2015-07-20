@@ -4,6 +4,7 @@
 #include "ga.h"
 #include "circle.h"
 #include "image.h"
+#include "console.h"
 
 static bool _is_initialized = false;
 static int _num_gen;
@@ -387,7 +388,7 @@ void _save_generation(
 	}
 	struct ia_circles *gen = NULL;
 	char img_path[64];
-	printf_console("Saving generation %lu\n", counter);
+	console_print("Saving generation %lu", counter);
 	gen = generation[0];
 	// Save the image
 	snprintf(img_path, sizeof(img_path),
@@ -429,6 +430,9 @@ struct ia_circles *do_ga()
 	do {
 		counter++;
 		ia_cfg.cur_gen = counter;
+		if(generation) {
+			ia_cfg.cur_gen_score = generation[0]->img->score;
+		}
 		perform_save = false;
 		ia_cfg.seed1 = clone_circles(generation[0]);
 		ia_cfg.seed2 = clone_circles(generation[1]);

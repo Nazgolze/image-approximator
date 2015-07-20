@@ -97,6 +97,7 @@ struct ia_cfg_st {
 	int num_init; /**< # sets to init */
 	int mutation; /**< How often to perform a mutation */
 	uint64_t cur_gen; /**< Current generation */
+	int64_t cur_gen_score; /**< Generation[0] score */
 
 	FILE *log;
 
@@ -120,7 +121,6 @@ char *end_time(struct timespec *, struct timespec *, char *, ...);
 void ia_random_action(struct ia_circle *);
 
 int printfl(enum ia_print_level, const char *fmt, ...);
-int printf_console(const char *fmt, ...);
 void strip_newline(char *);
 
 void ia_cfg_init();
