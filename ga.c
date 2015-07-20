@@ -325,10 +325,87 @@ void _mutation(int counter)
 	refresh_circles(ia_cfg.seed3);
 }
 
+/**
+ * Save the generation circles to svg
+ *
+ * @param gen The generation to save
+ * @param img_path Where to save it
+ */
+void _save_generation_svg(
+	struct ia_circles *gen,
+	const char *img_path
+	)
+{
+	if(!gen) {
+		printfe("No generation struct provided");
+		return;
+	}
+	int ix;
+	struct ia_circle *circle;
+	FILE *fp = fopen(img_path, "w");
+	if(!fp) {
+		printfe("Failed to write to %s\n", img_path);
+		return;
+	}
+	fprintf(fp, "<!DOCTYPE svg PUBLIC '-//W3C//DTD SVG 1.0//EN' 'http://www.w3.org/TR/SVG/DTD/svg10.dtd'>\n");
+	fprintf(fp, "<svg width='%d' height='%d' xmlns='http://www.w3.org/2000/svg'>\n",
+		ia_cfg.screen_width,
+		ia_cfg.screen_height);
+	for(ix = 0; ix < gen->num_circles; ix++) {
+		circle = &gen->circles[ix];
+		fprintf(fp, "<circle cx='%d' cy='%d' r='%d' fill='rgb(%u,%u,%u)'/>\n",
+			circle->x,
+			circle->y,
+			circle->radius,
+			circle->color.r,
+			circle->color.g,
+			circle->color.b);
+	}
+	fprintf(fp, "</svg>\n");
+	fclose(fp);
+}
+
+/**
+ * Save the generation of circles.
+ *
+ * This always saves generation[0] since that is the generation
+ * that is used to compare at the end of the loop whether we have
+ * reached the perfect score.
+ *
+ * This will save 2 files for a generation:
+ * - generation-X.jpg: The bitmap image
+ * - generation-X.svg: The circle layout
+ */
+void _save_generation(
+	struct ia_circles **generation,
+	uint64_t counter
+	)
+{
+	if(!generation) {
+		printfe("No generation struct provided");
+		return;
+	}
+	struct ia_circles *gen = NULL;
+	char img_path[64];
+	printf_console("Saving generation %lu\n", counter);
+	gen = generation[0];
+	// Save the image
+	snprintf(img_path, sizeof(img_path),
+		"%s/generation-%lu.jpg",
+		OUTPUT_PATH, counter);
+	al_save_bitmap(img_path, gen->img->bmp);
+	// Save the circle layout
+	snprintf(img_path, sizeof(img_path),
+		"%s/generation-%lu.svg",
+		OUTPUT_PATH, counter);
+	_save_generation_svg(gen, img_path);
+}
+
 struct ia_circles *do_ga()
 {
 	uint64_t counter = 0;
 	bool found_perfect_solution = false;
+	bool perform_save = false;
 	struct ia_circles **generation;
 	//struct ia_circles *seed1, *seed2 = NULL, *seed3, *seed4, *best, *ret;
 	qsort(circle_pool, _num_gen, sizeof(struct ia_circles),
@@ -351,6 +428,7 @@ struct ia_circles *do_ga()
 
 	do {
 		counter++;
+		perform_save = false;
 		ia_cfg.seed1 = clone_circles(generation[0]);
 		ia_cfg.seed2 = clone_circles(generation[1]);
 		if(abs(ia_cfg.seed1->img->score - generation[GEN_SIZE / 2]->img->score) < 1000) {
@@ -387,6 +465,9 @@ struct ia_circles *do_ga()
 			case IA_USER_MUTATE:
 				_mutation(counter);
 				break;
+			case IA_USER_SAVE:
+				perform_save = true;
+				break;
 			default:
 				break;
 		}
@@ -400,6 +481,9 @@ struct ia_circles *do_ga()
 		free(generation);
 
 		generation = _new_generation(ia_cfg.seed1, ia_cfg.seed2, ia_cfg.seed3, ia_cfg.seed4);
+		if(perform_save) {
+			_save_generation(generation, counter);
+		}
 
 		free_circles(ia_cfg.seed1);
 		free_circles(ia_cfg.seed2);
@@ -409,7 +493,7 @@ struct ia_circles *do_ga()
 		free(ia_cfg.seed2);
 		free(ia_cfg.seed3);
 		free(ia_cfg.seed4);
-	
+
 		for(idx = 0; idx < 5; idx++) {
 			printfi("%lu generation[%d] = %lu; mother = %ld, father = %ld\n",
 			    counter, idx, generation[idx]->img->score,

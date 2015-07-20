@@ -22,6 +22,7 @@
 #define streq(str1,str2) !strcmp(str1,str2)
 
 #define GEN_SIZE ia_cfg.num_sets
+#define OUTPUT_PATH "output"
 
 // data definitions
 struct ia_color {
@@ -60,6 +61,7 @@ enum ia_actions {
 enum ia_user_actions {
 	IA_USER_NONE = 0,
 	IA_USER_MUTATE,
+	IA_USER_SAVE,
 };
 
 enum ia_color_enum {
@@ -117,6 +119,7 @@ char *end_time(struct timespec *, struct timespec *, char *, ...);
 void ia_random_action(struct ia_circle *);
 
 int printfl(enum ia_print_level, const char *fmt, ...);
+int printf_console(const char *fmt, ...);
 void strip_newline(char *);
 
 void ia_cfg_init();
