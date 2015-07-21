@@ -22,6 +22,7 @@
 #define streq(str1,str2) !strcmp(str1,str2)
 
 #define GEN_SIZE ia_cfg.num_sets
+#define OUTPUT_PATH "output"
 
 // data definitions
 struct ia_color {
@@ -60,6 +61,7 @@ enum ia_actions {
 enum ia_user_actions {
 	IA_USER_NONE = 0,
 	IA_USER_MUTATE,
+	IA_USER_SAVE,
 };
 
 enum ia_color_enum {
@@ -94,6 +96,8 @@ struct ia_cfg_st {
 	int num_sets; /**< # sets of circles */
 	int num_init; /**< # sets to init */
 	int mutation; /**< How often to perform a mutation */
+	uint64_t cur_gen; /**< Current generation */
+	int64_t cur_gen_score; /**< Generation[0] score */
 
 	FILE *log;
 

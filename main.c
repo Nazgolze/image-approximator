@@ -1,6 +1,7 @@
 #define GL_GLEXT_PROTOTYPES
 #define _GNU_SOURCE
 #include <sys/param.h>
+#include <sys/stat.h>
 
 #include <errno.h>
 #include <getopt.h>
@@ -23,6 +24,7 @@
 #include "circle.h"
 #include "image.h"
 #include "ga.h"
+#include "console.h"
 
 #define ONE_TIME printf("%s-%d\n", __FUNCTION__, __LINE__); fflush(stdout);
 
@@ -44,7 +46,7 @@ static void render(void)
 	char *end_time_str;
 	struct timespec tp1, tp2;
 	//int error = SUCCESS;
-	
+
 	start_time(&tp1);
 
 	end_time_str = end_time(&tp1, &tp2, "time");
@@ -87,6 +89,7 @@ static void init(void)
 void _print_input_help()
 {
 	printf("mutate: Enter mutation phase\n");
+	printf("save: Save the current image and state\n");
 	printf("--------------------------\n");
 	printf("help: Show the input help\n");
 	printf("exit or quit: Exit the program\n");
@@ -96,8 +99,9 @@ void _print_input_help()
 void *_user_input(void *arg)
 {
 	char line[512];
+	console_init();
 	while(1) {
-		printf(">> ");
+		console_draw(NULL);
 		if(fgets(line, sizeof(line), stdin)) {
 			strip_newline(line);
 			if(!strlen(line)) {
@@ -111,6 +115,8 @@ void *_user_input(void *arg)
 				_print_input_help();
 			} else if(streq(line, "mutate")) {
 				ia_cfg.action = IA_USER_MUTATE;
+			} else if(strstr(line, "save")) {
+				ia_cfg.action = IA_USER_SAVE;
 			}
 		}
 	}
@@ -170,6 +176,17 @@ int main(int argc, char **argv)
 		return ERROR;
 	}
 	ia_cfg_init();
+
+        // Create the output directory
+        struct stat statbuf;
+        if(stat(OUTPUT_PATH, &statbuf) != 0) {
+                if(mkdir(OUTPUT_PATH,
+                        S_IRUSR|S_IWUSR|S_IXUSR|S_IRGRP|S_IXGRP) < 0) {
+                        printfe("Failed to created output directory %s",
+                                OUTPUT_PATH);
+                        return ERROR;
+                }
+        }
 
 	int c;
 	while(true) {
