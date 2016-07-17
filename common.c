@@ -113,10 +113,11 @@ char *end_time(struct timespec *tp1, struct timespec *tp2, char *fmt, ...)
 	return tmp;
 }
 
-void ia_random_action(struct ia_circle *circle)
+void _ia_random_action(struct ia_circle *circle, bool mini)
 {
 	int screen_factor = MIN(ia_cfg.screen_width, ia_cfg.screen_height);
 	int factor = get_rand() % (screen_factor / 2);
+	//int factor = get_rand() % 5;
 	//int factor = get_rand() % (MAX(screen_width, screen_height) * 2);
 	int tmp;
 	enum ia_actions action = get_rand() % 3;
@@ -127,6 +128,14 @@ void ia_random_action(struct ia_circle *circle)
 	unsigned char c_factor = get_rand() % 50;
 
 	c_factor = MAX(c_factor, 1);
+
+	if(mini) {
+		factor %= 10;
+		r_factor = r_factor > 0 ? factor : -factor;
+		c_factor %= 10;
+		factor = MIN(factor, 1);
+		c_factor = MIN(c_factor, 1);
+	}
 
 	int dir = get_rand() % 4;
 	switch(action) {
@@ -148,7 +157,7 @@ void ia_random_action(struct ia_circle *circle)
 		break;
 	case IA_RESIZE:
 		circle->radius += r_factor;
-		circle->radius = MAX(1, circle->radius);
+		circle->radius = MAX(3, circle->radius);
 		tmp = MIN(ia_cfg.screen_width, ia_cfg.screen_height) / 1;
 		circle->radius = MIN(tmp, circle->radius);
 		break;
@@ -163,7 +172,7 @@ void ia_random_action(struct ia_circle *circle)
 			if(get_rand() % 2) {
 				new = MIN(255, r + c_factor);
 			} else {
-				new = MAX(0, r - c_factor);
+				new = MAX(1, r - c_factor);
 			}
 			circle->color.r = new;
 			break;
@@ -171,7 +180,7 @@ void ia_random_action(struct ia_circle *circle)
 			if(get_rand() % 2) {
 				new = MIN(255, g + c_factor);
 			} else {
-				new = MAX(0, g - c_factor);
+				new = MAX(1, g - c_factor);
 			}
 			circle->color.g = new;
 			break;
@@ -179,7 +188,7 @@ void ia_random_action(struct ia_circle *circle)
 			if(get_rand() % 2) {
 				new = MIN(255, b + c_factor);
 			} else {
-				new = MAX(0, b - c_factor);
+				new = MAX(1, b - c_factor);
 			}
 			circle->color.b = new;
 			break;
@@ -242,8 +251,9 @@ void ia_cfg_init()
 	ia_cfg.print_level = IA_DEBUG;
 	ia_cfg.num_circles = 0;
 	ia_cfg.num_sets = 2700;
-	ia_cfg.num_init = 500;
 	ia_cfg.mutation = 100;
+	ia_cfg.extinction = 20;
+	ia_cfg.max_redo = 4;
 
 	ia_cfg.log = fopen("log", "w");
 	if(!ia_cfg.log) {
@@ -257,14 +267,15 @@ void ia_cfg_init()
 void ia_cfg_print()
 {
 	printfi("Screen: width: %d, height: %d\n",
-		ia_cfg.screen_width,
-		ia_cfg.screen_height);
+	    ia_cfg.screen_width,
+	    ia_cfg.screen_height);
 	printfi("Circles: %d, Sets: %d, Init sets: %d\n",
-		ia_cfg.num_circles,
-		ia_cfg.num_sets,
-		ia_cfg.num_init);
+	    ia_cfg.num_circles,
+	    ia_cfg.num_sets);
 	printfi("Mutation round every %d generations\n",
-		ia_cfg.mutation);
+	    ia_cfg.mutation);
+	printfi("Extinction event every %d generations\n",
+	    ia_cfg.extinction);
 }
 
 /**
@@ -322,14 +333,16 @@ int ia_cfg_read(
 			} else if(streq(val, "IA_DEBUG")) {
 				ia_cfg.print_level = IA_DEBUG;
 			}
-		} else if(streq(key, "num_init")) {
-			ia_cfg.num_init = strtol(val, (char **)NULL, 10);
 		} else if(streq(key, "num_sets")) {
 			ia_cfg.num_sets = strtol(val, (char **)NULL, 10);
 		} else if(streq(key, "num_circles")) {
 			ia_cfg.num_circles = strtol(val, (char **)NULL, 10);
 		} else if(streq(key, "mutation")) {
 			ia_cfg.mutation = strtol(val, (char **)NULL, 10);
+		} else if(streq(key, "extinction")) {
+			ia_cfg.extinction = strtol(val, (char **)NULL, 10);
+		} else if(streq(key, "max_redo")) {
+			ia_cfg.max_redo = strtol(val, (char **)NULL, 10);
 		} else {
 			printfe("Unable to handle %s\n", key);
 		}

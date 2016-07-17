@@ -137,7 +137,7 @@ void *_run(void *arg)
 
 	init();
 	printfi("Num circles: %d\n", ia_cfg.num_circles);
-	init_ga(ia_cfg.num_circles, ia_cfg.num_init);
+	init_ga(ia_cfg.num_circles);
 	struct ia_circles *awesome = do_ga();
 	printf("%ld\n", awesome->img->score);
 	ia_cfg_free();
@@ -167,6 +167,9 @@ static void _print_help(
 
 int main(int argc, char **argv)
 {
+	if(nice(10) == -1) {
+		printf("Error being nice\n");
+	}
 	if(!al_init()) {
 		printfe("failed to initialize allegro!\n");
 		return ERROR;

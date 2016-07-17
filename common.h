@@ -32,10 +32,12 @@ struct ia_color {
 };
 
 struct ia_circle {
+	int id;
 	int x;
 	int y;
 	int radius;
 	struct ia_color color;
+	uint32_t crossed_rounds_ago;
 };
 
 struct ia_circles {
@@ -45,6 +47,7 @@ struct ia_circles {
 	int64_t my_index;
 	int64_t father_index;
 	int64_t mother_index;
+	int64_t father2_index;
 };
 
 struct img_bitmap {
@@ -94,10 +97,11 @@ struct ia_cfg_st {
 
 	int num_circles;
 	int num_sets; /**< # sets of circles */
-	int num_init; /**< # sets to init */
 	int mutation; /**< How often to perform a mutation */
 	uint64_t cur_gen; /**< Current generation */
 	int64_t cur_gen_score; /**< Generation[0] score */
+	int extinction;
+	int max_redo;
 
 	FILE *log;
 
@@ -118,7 +122,8 @@ struct ia_cfg_st ia_cfg;
 uint32_t get_rand(void);
 void start_time(struct timespec *);
 char *end_time(struct timespec *, struct timespec *, char *, ...);
-void ia_random_action(struct ia_circle *);
+void _ia_random_action(struct ia_circle *, bool);
+#define ia_random_action(arg) _ia_random_action(arg, false)
 
 int printfl(enum ia_print_level, const char *fmt, ...);
 void strip_newline(char *);

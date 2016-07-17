@@ -3,6 +3,6 @@
 
 #include "common.h"
 
-void init_ga(int, int);
+void init_ga(int);
 struct ia_circles *do_ga(void);
 #endif

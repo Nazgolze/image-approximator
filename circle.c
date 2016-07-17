@@ -18,6 +18,14 @@
 			return 1; \
 	} while(0)
 
+
+static int _random_compare(const void *d1, const void *d2)
+{
+	int ret = (int)get_rand() % 3;
+	ret--;
+	return ret;
+}
+
 static int _circle_compare(const struct ia_circle *c1,
     const struct ia_circle *c2)
 {
@@ -33,6 +41,12 @@ static int _circle_compare(const struct ia_circle *c1,
 	COMPARE_VAL(c1->y, c2->y);
 
 	return 0;
+}
+
+static int _id_compare(const struct ia_circle *c1,
+    const struct ia_circle *c2)
+{
+	COMPARE_VAL(c1->id, c2->id);
 }
 
 static void _draw_circles(struct ia_circles *circles)
@@ -94,7 +108,7 @@ void refresh_circles(struct ia_circles *l_circles)
 	img_assign_score(l_circles->img, ia_cfg.reference_image);
 }
 
-
+#define INIT_CIRCLE_SIZE 10
 void init_circles(struct ia_circles *circles,
     uint64_t number_circles)
 {
@@ -111,15 +125,17 @@ void init_circles(struct ia_circles *circles,
 	circles->num_circles = number_circles;
 
 	for(int ix = 0; ix < circles->num_circles; ix++) {
+		circles->circles[ix].id = ix;
 		circles->circles[ix].x = get_rand() % ia_cfg.screen_width;
 		circles->circles[ix].y = get_rand() % ia_cfg.screen_height;
-		circles->circles[ix].color.r = get_rand() % 5;
-		circles->circles[ix].color.g = get_rand() % 5;
-		circles->circles[ix].color.b = get_rand() % 5;
-		circles->circles[ix].radius = get_rand() % 5 + 5;
+		circles->circles[ix].color.r = get_rand() % INIT_CIRCLE_SIZE;
+		circles->circles[ix].color.g = get_rand() % INIT_CIRCLE_SIZE;
+		circles->circles[ix].color.b = get_rand() % INIT_CIRCLE_SIZE;
+		circles->circles[ix].radius = get_rand() % INIT_CIRCLE_SIZE + 5;
 	}
 	circles->my_index = -1;
 	circles->father_index = -1;
+	circles->father2_index = -1;
 	circles->mother_index = -1;
 	
 	_render(circles);
@@ -128,7 +144,7 @@ void init_circles(struct ia_circles *circles,
 	return;
 }
 
-void sort_circles(struct ia_circles *circles)
+static void _sort_circles(struct ia_circles *circles, bool random)
 {
 	if(ia_cfg.quit) {
 		return;
@@ -145,8 +161,24 @@ void sort_circles(struct ia_circles *circles)
 		return;
 	}
 
-	qsort(circles->circles, circles->num_circles, sizeof(struct ia_circle),
-	    (__compar_fn_t)_circle_compare);
+	if(random) {
+		qsort(circles->circles, circles->num_circles, sizeof(struct ia_circle),
+		    (__compar_fn_t)_random_compare);
+	} else {
+		qsort(circles->circles, circles->num_circles, sizeof(struct ia_circle),
+		    (__compar_fn_t)_id_compare);
+		//    (__compar_fn_t)_circle_compare);
+	}
+}
+
+void sort_circles(struct ia_circles *circles)
+{
+	_sort_circles(circles, false);
+}
+
+void random_sort_circles(struct ia_circles *circles)
+{
+	_sort_circles(circles, true);
 }
 
 struct ia_circles *clone_circles(struct ia_circles *c)
@@ -165,6 +197,7 @@ struct ia_circles *clone_circles(struct ia_circles *c)
 	    ret_circles->num_circles * sizeof(struct ia_circle));
 	ret_circles->my_index = c->my_index;
 	ret_circles->father_index = c->father_index;
+	ret_circles->father2_index = c->father2_index;
 	ret_circles->mother_index = c->mother_index;
 
 	return ret_circles;
