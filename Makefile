@@ -9,8 +9,12 @@ INCFLAGS=-I/usr/include/libdrm
 LDFLAGS=-lGLU -lGL -lglut -lallegro -lallegro_image -lbsd -lm -lpthread
 
 OBJECTS=main.o common.o circle.o image.o ga.o console.o
+OBJECTS2=compare.o common.o image.o
 
 all: main
+
+compare: $(OBJECTS2) Makefile
+	$(CC) $(CFLAGS) $(INCFLAGS) $(OBJECTS2) -fPIC $(LDFLAGS) -o compare
 
 main: $(OBJECTS) Makefile
 	$(CC) $(CFLAGS) $(INCFLAGS) $(OBJECTS) -fPIC $(LDFLAGS) -o main
